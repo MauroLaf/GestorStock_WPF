@@ -1,0 +1,74 @@
+﻿<Window x:Class="GestorStock.API.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GestorStock.API"
+        mc:Ignorable="d"
+        Title="Gestor de Pedidos" Height="600" Width="1000">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/GestorStock.API;component/ModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Label Content="Filtrar por Explotación:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ComboBox x:Name="ExplotacionComboBox" Width="150" Margin="0,0,10,0"/>
+
+                <Label Content="Filtrar por Tipo de Ítem:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ComboBox x:Name="ItemTypeComboBox" Width="150" Margin="0,0,10,0"/>
+
+                <Button x:Name="BuscarButton" Content="Buscar" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
+                <Button x:Name="LimpiarButton" Content="Limpiar" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
+            </StackPanel>
+        </Border>
+
+        <DataGrid Grid.Row="1" x:Name="PedidosDataGrid" AutoGenerateColumns="False" IsReadOnly="True" Margin="10"
+          AlternatingRowBackground="#f2f2f2"
+          Style="{StaticResource ModernDataGridStyle}" SelectionChanged="PedidosDataGrid_SelectionChanged">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
+                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
+                <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
+                <DataGridCheckBoxColumn Header="Incidencia" Binding="{Binding Incidencia}" Width="Auto"/>
+                <DataGridTextColumn Header="Fecha Incidencia" Binding="{Binding FechaIncidencia, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
+                <DataGridTextColumn Header="Descripción Incidencia" Binding="{Binding DescripcionIncidencia}" Width="*"/>
+            </DataGrid.Columns>
+
+            <DataGrid.RowDetailsTemplate>
+                <DataTemplate>
+                    <StackPanel Margin="20,10" Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}, Path=ActualWidth}">
+                        <TextBlock Text="Detalles del Ítem:" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <DataGrid ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Tipo de Ítem" Binding="{Binding TipoItem.Nombre}" Width="Auto"/>
+                                <DataGridTextColumn Header="Explotación" Binding="{Binding TipoExplotacion.Nombre}" Width="Auto"/>
+                                <DataGridTextColumn Header="Nombre del Ítem" Binding="{Binding NombreItem}" Width="*"/>
+                                <DataGridTextColumn Header="Repuestos" Binding="{Binding RepuestosConcatenados}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </DataTemplate>
+            </DataGrid.RowDetailsTemplate>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+            <Button Content="Crear Pedido" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="CreateButton"/>
+            <Button Content="Editar Pedido" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="EditButton"/>
+            <Button Content="Eliminar Pedido" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="DeleteButton"/>
+            <Button Content="Descontar Unidad" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="DiscountButton"/>
+        </StackPanel>
+    </Grid>
+</Window>

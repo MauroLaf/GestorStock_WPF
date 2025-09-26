@@ -1,0 +1,58 @@
+﻿<Window x:Class="GestorStock.API.DiscountRepuestoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GestorStock.API"
+        mc:Ignorable="d"
+        Title="Descontar Repuesto" Height="450" Width="400">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Selecciona el repuesto para descontar"
+                   FontWeight="Bold"
+                   FontSize="16"
+                   Margin="0,0,0,10"
+                   Grid.Row="0"/>
+
+        <ListBox x:Name="RepuestosListBox"
+                 Grid.Row="1"
+                 Margin="0,0,0,10">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding NombreRepuesto}" FontWeight="Bold"/>
+                        <TextBlock Text=" - "/>
+                        <TextBlock Text="{Binding Stock}"/>
+                        <TextBlock Text=" en stock"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Label Content="Cantidad a descontar:" Grid.Row="2" Margin="0,0,0,5"/>
+        <TextBox x:Name="CantidadTextBox"
+                 Grid.Row="3"
+                 Margin="0,0,0,10"
+                 PreviewTextInput="CantidadTextBox_PreviewTextInput"
+                 />
+
+        <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Right">
+            <Button Content="Descontar"
+                    x:Name="SaveButton"
+                    Padding="10,5"
+                    Margin="5,0"
+                    Click="SaveButton_Click"/>
+            <Button Content="Cancelar"
+                    Padding="10,5"
+                    Margin="5,0"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

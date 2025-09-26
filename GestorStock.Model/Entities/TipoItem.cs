@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace GestorStock.Model.Entities
+{
+    public class TipoItem
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+
+        // Agrega esta colección para la relación con la entidad Item
+        public ICollection<Item> Items { get; set; } = new List<Item>();
+    }
+}
