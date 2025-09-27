@@ -3,6 +3,7 @@ using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GestorStock.Services.Implementations
@@ -19,17 +20,21 @@ namespace GestorStock.Services.Implementations
         public async Task<IEnumerable<Item>> GetAllItemsAsync()
         {
             return await _context.Items
-                                 .Include(i => i.TipoExplotacion)
-                                 .Include(i => i.Repuestos)
-                                 .ToListAsync();
+                                   .Include(i => i.TipoExplotacion)
+                                   .Include(i => i.TipoItem)
+                                   .Include(i => i.Repuestos)
+                                       .ThenInclude(r => r.TipoRepuesto)
+                                   .ToListAsync();
         }
 
         public async Task<Item?> GetItemByIdAsync(int id)
         {
             return await _context.Items
-                                 .Include(i => i.TipoExplotacion)
-                                 .Include(i => i.Repuestos)
-                                 .FirstOrDefaultAsync(i => i.Id == id);
+                                   .Include(i => i.TipoExplotacion)
+                                   .Include(i => i.TipoItem)
+                                   .Include(i => i.Repuestos)
+                                       .ThenInclude(r => r.TipoRepuesto)
+                                   .FirstOrDefaultAsync(i => i.Id == id);
         }
 
         public async Task CreateItemAsync(Item item)
@@ -40,8 +45,51 @@ namespace GestorStock.Services.Implementations
 
         public async Task UpdateItemAsync(Item item)
         {
-            _context.Entry(item).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            var existingItem = await _context.Items
+                                   .Include(i => i.Repuestos)
+                                   .FirstOrDefaultAsync(i => i.Id == item.Id);
+
+            if (existingItem != null)
+            {
+                // 1. Actualiza las propiedades básicas del ítem.
+                existingItem.NombreItem = item.NombreItem;
+                existingItem.TipoExplotacion = item.TipoExplotacion;
+                existingItem.TipoItem = item.TipoItem;
+
+                // 2. Sincroniza la colección de repuestos.
+                var incomingRepuestos = item.Repuestos.ToList();
+
+                // Identifica los repuestos a eliminar.
+                var repuestosToDelete = existingItem.Repuestos
+                    .Where(r => !incomingRepuestos.Any(inc => inc.Id == r.Id))
+                    .ToList();
+
+                // Elimina los repuestos que ya no existen.
+                _context.Repuestos.RemoveRange(repuestosToDelete);
+
+                // Recorre la lista de repuestos que vienen de la UI.
+                foreach (var incomingRepuesto in incomingRepuestos)
+                {
+                    var existingRepuesto = existingItem.Repuestos
+                        .FirstOrDefault(r => r.Id == incomingRepuesto.Id);
+
+                    if (existingRepuesto != null)
+                    {
+                        // Repuesto existente: actualiza sus propiedades.
+                        existingRepuesto.Nombre = incomingRepuesto.Nombre;
+                        existingRepuesto.Cantidad = incomingRepuesto.Cantidad;
+                        existingRepuesto.TipoRepuesto = incomingRepuesto.TipoRepuesto;
+                    }
+                    else
+                    {
+                        // Nuevo repuesto: agrégalo a la colección.
+                        existingItem.Repuestos.Add(incomingRepuesto);
+                    }
+                }
+
+                // 3. Guarda todos los cambios en la base de datos.
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task DeleteItemAsync(int id)

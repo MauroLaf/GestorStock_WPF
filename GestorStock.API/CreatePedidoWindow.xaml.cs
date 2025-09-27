@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Runtime.Versioning;
 using System;
+using System.Threading.Tasks;
 
 namespace GestorStock.API
 {
@@ -38,7 +39,7 @@ namespace GestorStock.API
 
             this.Loaded += CreatePedidoWindow_Loaded;
             AddItemButton.Click += AddItemButton_Click;
-            EditItemButton.Click += EditItemButton_Click; // ¡Agrega este evento!
+            EditItemButton.Click += EditItemButton_Click;
             AcceptButton.Click += AcceptButton_Click;
             CancelButton.Click += CancelButton_Click;
         }
@@ -54,7 +55,7 @@ namespace GestorStock.API
 
         private void CreatePedidoWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Puedes cargar datos iniciales aquí si es necesario
+            // Carga inicial de datos si es necesaria
         }
 
         private void LoadPedidoData()
@@ -96,7 +97,6 @@ namespace GestorStock.API
             }
         }
 
-        // Nuevo método para editar un ítem
         private void EditItemButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedItem = ItemsDataGrid.SelectedItem as Item;
@@ -111,12 +111,10 @@ namespace GestorStock.API
                 _repuestoService,
                 _tipoRepuestoService,
                 _tipoItemService,
-                selectedItem); // Se pasa el ítem para que lo edite
+                selectedItem);
 
             if (editItemWindow.ShowDialog() == true)
             {
-                // La ObservableCollection ya se encargará de notificar los cambios
-                // al DataGrid, pero si no se actualiza, puedes forzar el refresh
                 ItemsDataGrid.Items.Refresh();
             }
         }
@@ -131,6 +129,7 @@ namespace GestorStock.API
 
             if (_pedidoToEdit != null)
             {
+                // Lógica de actualización del pedido existente
                 _pedidoToEdit.Descripcion = DescripcionTextBox.Text;
                 _pedidoToEdit.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
                 _pedidoToEdit.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
@@ -142,6 +141,7 @@ namespace GestorStock.API
             }
             else
             {
+                // Lógica para crear un nuevo pedido
                 var newPedido = new Pedido
                 {
                     Fecha = DateTime.Today,
@@ -152,6 +152,8 @@ namespace GestorStock.API
                     Items = _items.ToList()
                 };
 
+                // No es necesario modificar aquí si la asignación de IDs se hace correctamente en AddItemWindow.
+                // El problema estaba en la otra ventana.
                 await _pedidoService.CreatePedidoAsync(newPedido);
                 MessageBox.Show("Pedido creado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }

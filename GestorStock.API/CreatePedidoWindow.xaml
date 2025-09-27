@@ -48,7 +48,7 @@
                 <DataGridTextColumn Header="Tipo de Ítem" Width="150" Binding="{Binding TipoItem.Nombre}"/>
                 <DataGridTextColumn Header="Explotación" Width="150" Binding="{Binding TipoExplotacion.Nombre}"/>
                 <DataGridTextColumn Header="Nombre del Ítem" Width="200" Binding="{Binding NombreItem}"/>
-                <DataGridTextColumn Header="Repuestos" Width="300" Binding="{Binding RepuestosConcatenados}"/>
+                <DataGridTextColumn Header="Repuestos" Width="300" Binding="{Binding RepuestosFormateados}"/>
             </DataGrid.Columns>
         </DataGrid>
 

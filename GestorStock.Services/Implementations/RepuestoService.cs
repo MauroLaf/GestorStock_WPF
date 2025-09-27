@@ -34,8 +34,37 @@ namespace GestorStock.Services.Implementations
 
         public async Task UpdateRepuestoAsync(Repuesto repuesto)
         {
-            _context.Entry(repuesto).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            // Carga el repuesto existente de la base de datos, incluyendo su TipoRepuesto.
+            var existingRepuesto = await _context.Repuestos
+                .Include(r => r.TipoRepuesto) // Asegura que el TipoRepuesto se cargue
+                .FirstOrDefaultAsync(r => r.Id == repuesto.Id);
+
+            if (existingRepuesto != null)
+            {
+                // Actualiza las propiedades escalares (Nombre, Cantidad).
+                existingRepuesto.Nombre = repuesto.Nombre;
+                existingRepuesto.Cantidad = repuesto.Cantidad;
+
+                // Carga el TipoRepuesto de la base de datos por el ID del objeto que viene de la UI.
+                // Esto evita errores de "tracking" de Entity Framework.
+                if (repuesto.TipoRepuesto != null)
+                {
+                    var tipoRepuestoFromDb = await _context.TipoRepuestos
+                        .FindAsync(repuesto.TipoRepuesto.Id);
+
+                    if (tipoRepuestoFromDb != null)
+                    {
+                        // Asigna el objeto cargado al repuesto existente.
+                        existingRepuesto.TipoRepuesto = tipoRepuestoFromDb;
+                    }
+                }
+
+                // Le indicamos al contexto que el objeto ha sido modificado.
+                _context.Repuestos.Update(existingRepuesto);
+
+                // Guardamos los cambios en la base de datos.
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task DeleteRepuestoAsync(int id)

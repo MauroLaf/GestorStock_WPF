@@ -25,6 +25,8 @@ namespace GestorStock.Services.Implementations
                                  .ThenInclude(i => i.Repuestos)
                                  .ToListAsync();
         }
+
+        // Se ha añadido la implementación correcta del método de la interfaz.
         public async Task<IEnumerable<Pedido>> GetAllPedidosWithDetailsAsync()
         {
             return await _context.Pedidos
@@ -34,6 +36,7 @@ namespace GestorStock.Services.Implementations
                                  .ThenInclude(i => i.Repuestos)
                                  .ToListAsync();
         }
+
         public async Task<Pedido?> GetPedidoByIdAsync(int id)
         {
             return await _context.Pedidos
@@ -46,6 +49,27 @@ namespace GestorStock.Services.Implementations
 
         public async Task CreatePedidoAsync(Pedido pedido)
         {
+            foreach (var item in pedido.Items)
+            {
+                if (item.TipoItem != null && item.TipoItem.Id > 0)
+                {
+                    _context.Entry(item.TipoItem).State = EntityState.Unchanged;
+                }
+
+                if (item.TipoExplotacion != null && item.TipoExplotacion.Id > 0)
+                {
+                    _context.Entry(item.TipoExplotacion).State = EntityState.Unchanged;
+                }
+
+                foreach (var repuesto in item.Repuestos)
+                {
+                    if (repuesto.TipoRepuesto != null && repuesto.TipoRepuesto.Id > 0)
+                    {
+                        _context.Entry(repuesto.TipoRepuesto).State = EntityState.Unchanged;
+                    }
+                }
+            }
+
             await _context.Pedidos.AddAsync(pedido);
             await _context.SaveChangesAsync();
         }

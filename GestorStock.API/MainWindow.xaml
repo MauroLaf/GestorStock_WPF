@@ -56,8 +56,22 @@
                                 <DataGridTextColumn Header="Tipo de Ítem" Binding="{Binding TipoItem.Nombre}" Width="Auto"/>
                                 <DataGridTextColumn Header="Explotación" Binding="{Binding TipoExplotacion.Nombre}" Width="Auto"/>
                                 <DataGridTextColumn Header="Nombre del Ítem" Binding="{Binding NombreItem}" Width="*"/>
-                                <DataGridTextColumn Header="Repuestos" Binding="{Binding RepuestosConcatenados}" Width="*"/>
                             </DataGrid.Columns>
+
+                            <DataGrid.RowDetailsTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="20,10" Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}, Path=ActualWidth}">
+                                        <TextBlock Text="Repuestos del Ítem:" FontWeight="Bold" Margin="0,0,0,5"/>
+                                        <DataGrid ItemsSource="{Binding Repuestos}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
+                                                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="150"/>
+                                                <DataGridTextColumn Header="Tipo de Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="150"/>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGrid.RowDetailsTemplate>
                         </DataGrid>
                     </StackPanel>
                 </DataTemplate>

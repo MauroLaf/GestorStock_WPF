@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GestorStock.API"
         mc:Ignorable="d"
-        Title="Agregar Ítem y Repuestos" Height="450" Width="400"
+        Title="Agregar Ítem y Repuestos" Height="450" Width="600"
         WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -42,17 +42,17 @@
         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="5">
             <TextBox x:Name="CantidadTextBox" Width="100"/>
             <Button x:Name="AddRepuestoButton" Content="Agregar Repuesto" Margin="10,0,0,0"/>
+            <Button x:Name="EditRepuestoButton" Content="Editar Repuesto" Margin="10,0,0,0"/>
+            <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Margin="10,0,0,0"/>
         </StackPanel>
 
-        <ListView x:Name="RepuestosListView" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="5">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Nombre" DisplayMemberBinding="{Binding Nombre}" Width="200"/>
-                    <GridViewColumn Header="Cantidad" DisplayMemberBinding="{Binding Cantidad}" Width="150"/>
-                    <GridViewColumn Header="Tipo de Repuesto" DisplayMemberBinding="{Binding TipoRepuesto.Nombre}" Width="150"/>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <DataGrid x:Name="RepuestosDataGrid" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="5" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="150"/>
+                <DataGridTextColumn Header="Tipo de Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="150"/>
+            </DataGrid.Columns>
+        </DataGrid>
 
         <StackPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
             <Button x:Name="AcceptButton" Content="Aceptar" Width="80" Margin="5"/>

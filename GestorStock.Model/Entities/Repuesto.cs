@@ -1,15 +1,53 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GestorStock.Model.Entities
 {
-    public class Repuesto
+    public class Repuesto : INotifyPropertyChanged
     {
+        // Evento que notifica a los suscriptores cuando una propiedad ha cambiado.
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        // Método para invocar el evento.
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        // Propiedades de la clase Repuesto
         public int Id { get; set; }
-        public string Nombre { get; set; } = string.Empty;
-        public int Cantidad { get; set; }
+
+        private string _nombre = string.Empty;
+        public string Nombre
+        {
+            get => _nombre;
+            set
+            {
+                if (_nombre != value)
+                {
+                    _nombre = value;
+                    OnPropertyChanged(nameof(Nombre));
+                }
+            }
+        }
+
+        private int _cantidad;
+        public int Cantidad
+        {
+            get => _cantidad;
+            set
+            {
+                if (_cantidad != value)
+                {
+                    _cantidad = value;
+                    OnPropertyChanged(nameof(Cantidad));
+                }
+            }
+        }
+
         public string Descripcion { get; set; } = string.Empty;
 
-        // Nuevas propiedades para la relación con Item
+        // Propiedades de navegación para la relación con Item
         public int ItemId { get; set; }
         public Item? Item { get; set; }
 
