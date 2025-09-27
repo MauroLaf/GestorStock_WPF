@@ -26,24 +26,31 @@ namespace GestorStock.Services.Implementations
                                  .ToListAsync();
         }
 
-        // Se ha añadido la implementación correcta del método de la interfaz.
         public async Task<IEnumerable<Pedido>> GetAllPedidosWithDetailsAsync()
         {
+            // CORREGIDO: Añade la línea para cargar la relación TipoRepuesto.
             return await _context.Pedidos
                                  .Include(p => p.Items)
                                  .ThenInclude(i => i.TipoExplotacion)
                                  .Include(p => p.Items)
+                                 .ThenInclude(i => i.TipoSoporte) // Agrega esta línea para que se cargue TipoSoporte
+                                 .Include(p => p.Items)
                                  .ThenInclude(i => i.Repuestos)
+                                 .ThenInclude(r => r.TipoRepuesto) // <<-- ESTA LÍNEA ES LA CLAVE
                                  .ToListAsync();
         }
 
         public async Task<Pedido?> GetPedidoByIdAsync(int id)
         {
+            // CORREGIDO: Añade la línea para cargar la relación TipoRepuesto en la búsqueda por ID.
             return await _context.Pedidos
                                  .Include(p => p.Items)
                                  .ThenInclude(i => i.TipoExplotacion)
                                  .Include(p => p.Items)
+                                 .ThenInclude(i => i.TipoSoporte) // Y esta también para que cargue TipoSoporte
+                                 .Include(p => p.Items)
                                  .ThenInclude(i => i.Repuestos)
+                                 .ThenInclude(r => r.TipoRepuesto) // <<-- ESTA LÍNEA ES LA CLAVE
                                  .FirstOrDefaultAsync(p => p.Id == id);
         }
 
@@ -89,7 +96,7 @@ namespace GestorStock.Services.Implementations
                 await _context.SaveChangesAsync();
             }
         }
-        // **NUEVO MÉTODO PARA ELIMINAR UN REPUESTO**
+
         public async Task<bool> DeleteRepuestoAsync(int repuestoId)
         {
             var repuesto = await _context.Repuestos.FindAsync(repuestoId);
