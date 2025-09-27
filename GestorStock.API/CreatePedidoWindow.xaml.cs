@@ -1,5 +1,4 @@
-﻿using GestorStock.Data.Repositories;
-using GestorStock.Model.Entities;
+﻿using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -7,6 +6,7 @@ using System.Windows;
 using System.Runtime.Versioning;
 using System;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace GestorStock.API
 {
@@ -21,10 +21,17 @@ namespace GestorStock.API
         private readonly ITipoItemService _tipoItemService;
 
         private ObservableCollection<Item> _items;
-        private Pedido? _pedidoToEdit;
+        private Pedido _pedido;
 
-        // Constructor para CREAR un nuevo pedido
-        public CreatePedidoWindow(IPedidoService pedidoService, IItemService itemService, ITipoExplotacionService tipoExplotacionService, IRepuestoService repuestoService, ITipoRepuestoService tipoRepuestoService, ITipoItemService tipoItemService)
+        public CreatePedidoWindow(
+            // ORDEN CORREGIDO para que coincida con MainWindow
+            IPedidoService pedidoService,
+            IRepuestoService repuestoService,
+            ITipoExplotacionService tipoExplotacionService,
+            ITipoRepuestoService tipoRepuestoService,
+            ITipoItemService tipoItemService,
+            IItemService itemService,
+            Pedido? pedidoToEdit = null)
         {
             InitializeComponent();
             _pedidoService = pedidoService;
@@ -37,42 +44,54 @@ namespace GestorStock.API
             _items = new ObservableCollection<Item>();
             ItemsDataGrid.ItemsSource = _items;
 
+            if (pedidoToEdit != null)
+            {
+                _pedido = pedidoToEdit;
+                this.Title = "Editar Pedido";
+                LoadPedidoData();
+            }
+            else
+            {
+                _pedido = new Pedido
+                {
+                    FechaLlegada = DateTime.Now // <--- Cambio aquí
+                };
+            }
+
             this.Loaded += CreatePedidoWindow_Loaded;
             AddItemButton.Click += AddItemButton_Click;
             EditItemButton.Click += EditItemButton_Click;
-            AcceptButton.Click += AcceptButton_Click;
-            CancelButton.Click += CancelButton_Click;
-        }
-
-        // Constructor para EDITAR un pedido existente
-        public CreatePedidoWindow(IPedidoService pedidoService, IItemService itemService, ITipoExplotacionService tipoExplotacionService, IRepuestoService repuestoService, ITipoRepuestoService tipoRepuestoService, ITipoItemService tipoItemService, Pedido pedidoToEdit)
-            : this(pedidoService, itemService, tipoExplotacionService, repuestoService, tipoRepuestoService, tipoItemService)
-        {
-            _pedidoToEdit = pedidoToEdit;
-            this.Title = "Editar Pedido";
-            LoadPedidoData();
+            DeleteItemButton.Click += DeleteItemButton_Click;
+            GuardarPedidoButton.Click += GuardarPedidoButton_Click;
+            CancelarButton.Click += CancelarButton_Click;
         }
 
         private void CreatePedidoWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Carga inicial de datos si es necesaria
+            if (_pedido?.Items != null)
+            {
+                foreach (var item in _pedido.Items)
+                {
+                    _items.Add(item);
+                }
+            }
         }
 
         private void LoadPedidoData()
         {
-            if (_pedidoToEdit == null) return;
-            DescripcionTextBox.Text = _pedidoToEdit.Descripcion;
-            IncidenciaCheckBox.IsChecked = _pedidoToEdit.Incidencia;
-            if (_pedidoToEdit.FechaIncidencia.HasValue)
+            if (_pedido == null) return;
+            DescripcionTextBox.Text = _pedido.Descripcion;
+            IncidenciaCheckBox.IsChecked = _pedido.Incidencia;
+            if (_pedido.FechaIncidencia.HasValue)
             {
-                IncidenciaDatePicker.SelectedDate = _pedidoToEdit.FechaIncidencia.Value;
+                IncidenciaDatePicker.SelectedDate = _pedido.FechaIncidencia.Value;
             }
-            DescripcionIncidenciaTextBox.Text = _pedidoToEdit.DescripcionIncidencia;
+            DescripcionIncidenciaTextBox.Text = _pedido.DescripcionIncidencia;
 
-            if (_pedidoToEdit.Items != null)
+            if (_pedido.Items != null)
             {
                 _items.Clear();
-                foreach (var item in _pedidoToEdit.Items)
+                foreach (var item in _pedido.Items)
                 {
                     _items.Add(item);
                 }
@@ -89,11 +108,7 @@ namespace GestorStock.API
 
             if (addItemWindow.ShowDialog() == true)
             {
-                var newItem = addItemWindow.GetItem();
-                if (newItem != null)
-                {
-                    _items.Add(newItem);
-                }
+                _items.Add(addItemWindow.ItemResult);
             }
         }
 
@@ -115,53 +130,58 @@ namespace GestorStock.API
 
             if (editItemWindow.ShowDialog() == true)
             {
-                ItemsDataGrid.Items.Refresh();
+                var updatedItem = editItemWindow.ItemResult;
+
+                var index = _items.IndexOf(selectedItem);
+                if (index != -1)
+                {
+                    _items.RemoveAt(index);
+                    _items.Insert(index, updatedItem);
+                }
             }
         }
 
-        private async void AcceptButton_Click(object sender, RoutedEventArgs e)
+        private void DeleteItemButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_items.Any())
+            var selectedItem = ItemsDataGrid.SelectedItem as Item;
+            if (selectedItem == null)
             {
-                MessageBox.Show("Debe agregar al menos un ítem al pedido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Por favor, selecciona un ítem para eliminar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (_pedidoToEdit != null)
-            {
-                // Lógica de actualización del pedido existente
-                _pedidoToEdit.Descripcion = DescripcionTextBox.Text;
-                _pedidoToEdit.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
-                _pedidoToEdit.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
-                _pedidoToEdit.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
-                _pedidoToEdit.Items = _items.ToList();
+            _items.Remove(selectedItem);
+        }
 
-                await _pedidoService.UpdatePedidoAsync(_pedidoToEdit);
-                MessageBox.Show("Pedido actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+        private async void GuardarPedidoButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_items.Any())
+            {
+                MessageBox.Show("El pedido debe contener al menos un ítem.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _pedido.Descripcion = DescripcionTextBox.Text;
+            _pedido.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
+            _pedido.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
+            _pedido.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
+            _pedido.Items = _items.ToList();
+
+            if (_pedido.Id == 0)
+            {
+                await _pedidoService.CreatePedidoAsync(_pedido);
+                MessageBox.Show("Pedido creado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                // Lógica para crear un nuevo pedido
-                var newPedido = new Pedido
-                {
-                    Fecha = DateTime.Today,
-                    Descripcion = DescripcionTextBox.Text,
-                    Incidencia = IncidenciaCheckBox.IsChecked ?? false,
-                    FechaIncidencia = IncidenciaDatePicker.SelectedDate,
-                    DescripcionIncidencia = DescripcionIncidenciaTextBox.Text,
-                    Items = _items.ToList()
-                };
-
-                // No es necesario modificar aquí si la asignación de IDs se hace correctamente en AddItemWindow.
-                // El problema estaba en la otra ventana.
-                await _pedidoService.CreatePedidoAsync(newPedido);
-                MessageBox.Show("Pedido creado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                await _pedidoService.UpdatePedidoAsync(_pedido);
+                MessageBox.Show("Pedido actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+
             this.DialogResult = true;
-            this.Close();
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private void CancelarButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
         }

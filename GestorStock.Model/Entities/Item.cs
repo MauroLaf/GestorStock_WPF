@@ -8,9 +8,9 @@ namespace GestorStock.Model.Entities
         public int Id { get; set; }
         public int PedidoId { get; set; }
         public Pedido? Pedido { get; set; }
-        public string NombreItem { get; set; } = string.Empty;
+        public string NombreUbicacion { get; set; } = string.Empty;
         public int TipoItemId { get; set; }
-        public TipoItem? TipoItem { get; set; }
+        public TipoSoporte? TipoSoporte { get; set; }
         public int TipoExplotacionId { get; set; }
         public TipoExplotacion? TipoExplotacion { get; set; }
 

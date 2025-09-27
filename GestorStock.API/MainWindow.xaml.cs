@@ -1,13 +1,15 @@
-﻿using GestorStock.Model.Entities;
+﻿using GestorStock.Data.Repositories;
+using GestorStock.Model.Entities;
 using GestorStock.Services.Implementations;
 using GestorStock.Services.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows;
-using System; // Agregado para el manejo de excepciones
+using System.Windows.Controls;
 
 namespace GestorStock.API
 {
@@ -19,11 +21,11 @@ namespace GestorStock.API
         private readonly IRepuestoService _repuestoService;
         private readonly ITipoExplotacionService _tipoExplotacionService;
         private readonly ITipoRepuestoService _tipoRepuestoService;
-        private readonly IItemService _itemService; // Asegúrate de tener este servicio inyectado si lo necesitas en CreatePedidoWindow
+        private readonly IItemService _itemService;
 
         private ObservableCollection<Pedido> _pedidos;
 
-        public MainWindow(IPedidoService pedidoService, IRepuestoService repuestoService, ITipoExplotacionService tipoExplotacionService, ITipoRepuestoService tipoRepuestoService, ITipoItemService tipoItemService, IItemService itemService) // Añade IItemService si lo usas
+        public MainWindow(IPedidoService pedidoService, IRepuestoService repuestoService, ITipoExplotacionService tipoExplotacionService, ITipoRepuestoService tipoRepuestoService, ITipoItemService tipoItemService, IItemService itemService)
         {
             InitializeComponent();
             _pedidoService = pedidoService;
@@ -31,7 +33,7 @@ namespace GestorStock.API
             _tipoExplotacionService = tipoExplotacionService;
             _tipoRepuestoService = tipoRepuestoService;
             _tipoItemService = tipoItemService;
-            _itemService = itemService; // Asigna el servicio de Item si lo usas
+            _itemService = itemService;
 
             _pedidos = new ObservableCollection<Pedido>();
             PedidosDataGrid.ItemsSource = _pedidos;
@@ -40,7 +42,6 @@ namespace GestorStock.API
             CreateButton.Click += CreateButton_Click;
             EditButton.Click += EditButton_Click;
             DeleteButton.Click += DeleteButton_Click;
-
             BuscarButton.Click += BuscarButton_Click;
             LimpiarButton.Click += LimpiarButton_Click;
         }
@@ -72,9 +73,9 @@ namespace GestorStock.API
             try
             {
                 var tiposItem = await _tipoItemService.GetAllTipoItemAsync();
-                ItemTypeComboBox.ItemsSource = tiposItem;
-                ItemTypeComboBox.DisplayMemberPath = "Nombre";
-                ItemTypeComboBox.SelectedIndex = -1;
+                TipoSoporteComboBox.ItemsSource = tiposItem;
+                TipoSoporteComboBox.DisplayMemberPath = "Nombre";
+                TipoSoporteComboBox.SelectedIndex = -1;
             }
             catch (Exception ex)
             {
@@ -86,7 +87,7 @@ namespace GestorStock.API
         {
             try
             {
-                var pedidos = await _pedidoService.GetAllPedidosAsync();
+                var pedidos = await _pedidoService.GetAllPedidosWithDetailsAsync();
                 _pedidos.Clear();
                 foreach (var pedido in pedidos)
                 {
@@ -104,11 +105,11 @@ namespace GestorStock.API
             await CargarTodosLosPedidosAsync();
 
             var explotacionSeleccionada = ExplotacionComboBox.SelectedItem as TipoExplotacion;
-            var tipoItemSeleccionado = ItemTypeComboBox.SelectedItem as TipoItem; // ¡Cambio aquí!
+            var tipoItemSeleccionado = TipoSoporteComboBox.SelectedItem as TipoSoporte;
 
             var resultados = _pedidos.Where(p =>
                 (explotacionSeleccionada == null || p.Items.Any(item => item.TipoExplotacion?.Id == explotacionSeleccionada.Id)) &&
-                (tipoItemSeleccionado == null || p.Items.Any(item => item.TipoItem?.Id == tipoItemSeleccionado.Id)) // ¡Cambio aquí!
+                (tipoItemSeleccionado == null || p.Items.Any(item => item.TipoSoporte?.Id == tipoItemSeleccionado.Id))
             ).ToList();
 
             _pedidos.Clear();
@@ -121,20 +122,19 @@ namespace GestorStock.API
         private async void LimpiarButton_Click(object sender, RoutedEventArgs e)
         {
             ExplotacionComboBox.SelectedIndex = -1;
-            ItemTypeComboBox.SelectedIndex = -1;
+            TipoSoporteComboBox.SelectedIndex = -1;
             await CargarTodosLosPedidosAsync();
         }
 
         private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
-            // Pasa todos los servicios necesarios al constructor de CreatePedidoWindow
             var createPedidoWindow = new CreatePedidoWindow(
                 _pedidoService,
-                _itemService,
-                _tipoExplotacionService,
                 _repuestoService,
+                _tipoExplotacionService,
                 _tipoRepuestoService,
-                _tipoItemService);
+                _tipoItemService,
+                _itemService);
 
             if (createPedidoWindow.ShowDialog() == true)
             {
@@ -144,7 +144,6 @@ namespace GestorStock.API
 
         private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            // Obtén el pedido seleccionado del DataGrid
             var selectedPedido = PedidosDataGrid.SelectedItem as Pedido;
             if (selectedPedido == null)
             {
@@ -152,20 +151,17 @@ namespace GestorStock.API
                 return;
             }
 
-            // Pasa el pedido seleccionado y todos los servicios al constructor de la ventana
             var editPedidoWindow = new CreatePedidoWindow(
                 _pedidoService,
-                _itemService,
-                _tipoExplotacionService,
                 _repuestoService,
+                _tipoExplotacionService,
                 _tipoRepuestoService,
                 _tipoItemService,
-                selectedPedido); // <-- ¡Pasa el pedido aquí!
+                _itemService,
+                selectedPedido);
 
-            // Muestra la ventana de edición
             if (editPedidoWindow.ShowDialog() == true)
             {
-                // Si el usuario guardó los cambios, recarga los pedidos
                 await CargarTodosLosPedidosAsync();
             }
         }
@@ -187,9 +183,32 @@ namespace GestorStock.API
             }
         }
 
-        private void PedidosDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private async void EliminarRepuesto_Click(object sender, RoutedEventArgs e)
         {
+            if (sender is Button button && button.Tag is int repuestoId)
+            {
+                var result = MessageBox.Show("¿Estás seguro de que deseas eliminar este repuesto?", "Confirmar Eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
+                    {
+                        await _repuestoService.DeleteRepuestoAsync(repuestoId);
+
+                        MessageBox.Show("Repuesto eliminado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                        await CargarTodosLosPedidosAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error al eliminar el repuesto: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
+
+        private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Este método puede quedar vacío si no necesitas manejar el evento de selección
         }
     }
 }

@@ -24,12 +24,13 @@ namespace GestorStock.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Fecha = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    Descripcion = table.Column<string>(type: "longtext", nullable: false)
+                    Descripcion = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Incidencia = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     FechaIncidencia = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     DescripcionIncidencia = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4")
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    FechaLlegada = table.Column<DateTime>(type: "datetime(6)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -111,7 +112,7 @@ namespace GestorStock.Data.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     PedidoId = table.Column<int>(type: "int", nullable: false),
-                    NombreItem = table.Column<string>(type: "longtext", nullable: false)
+                    NombreUbicacion = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     TipoItemId = table.Column<int>(type: "int", nullable: false),
                     TipoExplotacionId = table.Column<int>(type: "int", nullable: false),
@@ -157,9 +158,9 @@ namespace GestorStock.Data.Migrations
                     Cantidad = table.Column<int>(type: "int", nullable: false),
                     Descripcion = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    Precio = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
                     ItemId = table.Column<int>(type: "int", nullable: false),
-                    TipoRepuestoId = table.Column<int>(type: "int", nullable: false),
-                    Tipo = table.Column<int>(type: "int", nullable: false)
+                    TipoRepuestoId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -171,11 +172,10 @@ namespace GestorStock.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Repuestos_TipoRepuestos_Tipo",
-                        column: x => x.Tipo,
+                        name: "FK_Repuestos_TipoRepuestos_TipoRepuestoId",
+                        column: x => x.TipoRepuestoId,
                         principalTable: "TipoRepuestos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -241,9 +241,9 @@ namespace GestorStock.Data.Migrations
                 column: "ItemId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Repuestos_Tipo",
+                name: "IX_Repuestos_TipoRepuestoId",
                 table: "Repuestos",
-                column: "Tipo");
+                column: "TipoRepuestoId");
         }
 
         /// <inheritdoc />

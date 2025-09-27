@@ -27,8 +27,8 @@
                 <Label Content="Filtrar por Explotación:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                 <ComboBox x:Name="ExplotacionComboBox" Width="150" Margin="0,0,10,0"/>
 
-                <Label Content="Filtrar por Tipo de Ítem:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <ComboBox x:Name="ItemTypeComboBox" Width="150" Margin="0,0,10,0"/>
+                <Label Content="Filtrar por Tipo de Soporte:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ComboBox x:Name="TipoSoporteComboBox" Width="150" Margin="0,0,10,0"/>
 
                 <Button x:Name="BuscarButton" Content="Buscar" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
                 <Button x:Name="LimpiarButton" Content="Limpiar" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}"/>
@@ -38,9 +38,24 @@
         <DataGrid Grid.Row="1" x:Name="PedidosDataGrid" AutoGenerateColumns="False" IsReadOnly="True" Margin="10"
           AlternatingRowBackground="#f2f2f2"
           Style="{StaticResource ModernDataGridStyle}" SelectionChanged="PedidosDataGrid_SelectionChanged">
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding EstaVencido}" Value="True">
+                            <Setter Property="Background" Value="Red"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
-                <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
+                <DataGridTextColumn Header="Fecha de Creación" Binding="{Binding FechaCreacion, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
+
+                <DataGridTextColumn Header="Total (€)" Binding="{Binding TotalRepuestos, StringFormat={}{0:N2} €}" Width="Auto"/>
+                <DataGridTextColumn Header="Fecha de Llegada" Binding="{Binding FechaEstimadaLlegada, StringFormat=d}" Width="Auto"/>
+
                 <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
                 <DataGridCheckBoxColumn Header="Incidencia" Binding="{Binding Incidencia}" Width="Auto"/>
                 <DataGridTextColumn Header="Fecha Incidencia" Binding="{Binding FechaIncidencia, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
@@ -53,9 +68,9 @@
                         <TextBlock Text="Detalles del Ítem:" FontWeight="Bold" Margin="0,0,0,5"/>
                         <DataGrid ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Tipo de Ítem" Binding="{Binding TipoItem.Nombre}" Width="Auto"/>
+                                <DataGridTextColumn Header="Tipo de Soporte" Binding="{Binding TipoSoporte.Nombre}" Width="Auto"/>
                                 <DataGridTextColumn Header="Explotación" Binding="{Binding TipoExplotacion.Nombre}" Width="Auto"/>
-                                <DataGridTextColumn Header="Nombre del Ítem" Binding="{Binding NombreItem}" Width="*"/>
+                                <DataGridTextColumn Header="Nombre Ubicación" Binding="{Binding NombreUbicacion}" Width="*"/>
                             </DataGrid.Columns>
 
                             <DataGrid.RowDetailsTemplate>
@@ -67,6 +82,16 @@
                                                 <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
                                                 <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="150"/>
                                                 <DataGridTextColumn Header="Tipo de Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="150"/>
+
+                                                <DataGridTextColumn Header="Precio (€)" Binding="{Binding Precio, StringFormat={}{0:N2} €}" Width="150"/>
+
+                                                <DataGridTemplateColumn Header="Acciones" Width="Auto">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="Eliminar" Tag="{Binding Id}" Click="EliminarRepuesto_Click"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </StackPanel>

@@ -16,7 +16,7 @@ namespace GestorStock.Services.Implementations
             _context = context;
         }
 
-        public async Task<List<TipoItem>> GetAllTipoItemAsync()
+        public async Task<List<TipoSoporte>> GetAllTipoItemAsync()
         {
             return await _context.TiposItem.ToListAsync();
         }

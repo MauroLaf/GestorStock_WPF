@@ -6,6 +6,6 @@ namespace GestorStock.Services.Interfaces
 {
     public interface ITipoRepuestoService
     {
-        Task<IEnumerable<TipoRepuesto>> GetAllTiposAsync();
+        Task<IEnumerable<TipoRepuesto>> GetAllTipoRepuestoAsync();
     }
 }

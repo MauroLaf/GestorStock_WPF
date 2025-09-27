@@ -51,9 +51,9 @@ namespace GestorStock.Services.Implementations
         {
             foreach (var item in pedido.Items)
             {
-                if (item.TipoItem != null && item.TipoItem.Id > 0)
+                if (item.TipoSoporte != null && item.TipoSoporte.Id > 0)
                 {
-                    _context.Entry(item.TipoItem).State = EntityState.Unchanged;
+                    _context.Entry(item.TipoSoporte).State = EntityState.Unchanged;
                 }
 
                 if (item.TipoExplotacion != null && item.TipoExplotacion.Id > 0)
@@ -88,6 +88,18 @@ namespace GestorStock.Services.Implementations
                 _context.Pedidos.Remove(pedido);
                 await _context.SaveChangesAsync();
             }
+        }
+        // **NUEVO MÉTODO PARA ELIMINAR UN REPUESTO**
+        public async Task<bool> DeleteRepuestoAsync(int repuestoId)
+        {
+            var repuesto = await _context.Repuestos.FindAsync(repuestoId);
+            if (repuesto != null)
+            {
+                _context.Repuestos.Remove(repuesto);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
         }
     }
 }

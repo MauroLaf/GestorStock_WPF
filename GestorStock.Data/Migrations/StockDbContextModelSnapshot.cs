@@ -48,7 +48,7 @@ namespace GestorStock.Data.Migrations
                     b.Property<int?>("ExplotacionId")
                         .HasColumnType("int");
 
-                    b.Property<string>("NombreItem")
+                    b.Property<string>("NombreUbicacion")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -81,7 +81,6 @@ namespace GestorStock.Data.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Descripcion")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("DescripcionIncidencia")
@@ -91,6 +90,9 @@ namespace GestorStock.Data.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("FechaIncidencia")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("FechaLlegada")
                         .HasColumnType("datetime(6)");
 
                     b.Property<bool>("Incidencia")
@@ -121,17 +123,17 @@ namespace GestorStock.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Tipo")
-                        .HasColumnType("int");
+                    b.Property<decimal>("Precio")
+                        .HasColumnType("decimal(65,30)");
 
-                    b.Property<int>("TipoRepuestoId")
+                    b.Property<int?>("TipoRepuestoId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ItemId");
 
-                    b.HasIndex("Tipo");
+                    b.HasIndex("TipoRepuestoId");
 
                     b.ToTable("Repuestos");
                 });
@@ -173,7 +175,34 @@ namespace GestorStock.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("GestorStock.Model.Entities.TipoItem", b =>
+            modelBuilder.Entity("GestorStock.Model.Entities.TipoRepuesto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TipoRepuestos");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Nombre = "Original"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Nombre = "Usado"
+                        });
+                });
+
+            modelBuilder.Entity("GestorStock.Model.Entities.TipoSoporte", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -210,33 +239,6 @@ namespace GestorStock.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("GestorStock.Model.Entities.TipoRepuesto", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TipoRepuestos");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Nombre = "Original"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Nombre = "Usado"
-                        });
-                });
-
             modelBuilder.Entity("GestorStock.Model.Entities.Explotacion", b =>
                 {
                     b.HasOne("GestorStock.Model.Entities.TipoExplotacion", "TipoExplotacion")
@@ -266,7 +268,7 @@ namespace GestorStock.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("GestorStock.Model.Entities.TipoItem", "TipoItem")
+                    b.HasOne("GestorStock.Model.Entities.TipoSoporte", "TipoSoporte")
                         .WithMany("Items")
                         .HasForeignKey("TipoItemId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -276,7 +278,7 @@ namespace GestorStock.Data.Migrations
 
                     b.Navigation("TipoExplotacion");
 
-                    b.Navigation("TipoItem");
+                    b.Navigation("TipoSoporte");
                 });
 
             modelBuilder.Entity("GestorStock.Model.Entities.Repuesto", b =>
@@ -289,9 +291,7 @@ namespace GestorStock.Data.Migrations
 
                     b.HasOne("GestorStock.Model.Entities.TipoRepuesto", "TipoRepuesto")
                         .WithMany("Repuestos")
-                        .HasForeignKey("Tipo")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("TipoRepuestoId");
 
                     b.Navigation("Item");
 
@@ -318,14 +318,14 @@ namespace GestorStock.Data.Migrations
                     b.Navigation("Items");
                 });
 
-            modelBuilder.Entity("GestorStock.Model.Entities.TipoItem", b =>
-                {
-                    b.Navigation("Items");
-                });
-
             modelBuilder.Entity("GestorStock.Model.Entities.TipoRepuesto", b =>
                 {
                     b.Navigation("Repuestos");
+                });
+
+            modelBuilder.Entity("GestorStock.Model.Entities.TipoSoporte", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

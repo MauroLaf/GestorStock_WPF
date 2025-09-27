@@ -47,12 +47,27 @@ namespace GestorStock.Model.Entities
 
         public string Descripcion { get; set; } = string.Empty;
 
+        // **NUEVA PROPIEDAD: PRECIO**
+        private decimal _precio;
+        public decimal Precio
+        {
+            get => _precio;
+            set
+            {
+                if (_precio != value)
+                {
+                    _precio = value;
+                    OnPropertyChanged(nameof(Precio));
+                }
+            }
+        }
+
         // Propiedades de navegación para la relación con Item
         public int ItemId { get; set; }
         public Item? Item { get; set; }
 
         // Propiedades para la relación con TipoRepuesto
-        public int TipoRepuestoId { get; set; }
+        public int? TipoRepuestoId { get; set; }
         public TipoRepuesto? TipoRepuesto { get; set; }
     }
 }

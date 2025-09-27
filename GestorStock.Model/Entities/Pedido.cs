@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GestorStock.Model.Entities
 {
@@ -7,11 +8,34 @@ namespace GestorStock.Model.Entities
     {
         public int Id { get; set; }
         public DateTime Fecha { get; set; }
-        public string Descripcion { get; set; } = string.Empty; // Inicializado
+        public string? Descripcion { get; set; } = string.Empty;
         public bool Incidencia { get; set; }
         public DateTime? FechaIncidencia { get; set; }
-        public string? DescripcionIncidencia { get; set; } = string.Empty; // Acepta nulo
+        public string? DescripcionIncidencia { get; set; } = string.Empty;
+
+        // This is the one you should keep
+        public DateTime FechaLlegada { get; set; }
 
         public ICollection<Item> Items { get; set; } = new List<Item>();
+
+        // **PROPIEDAD CALCULADA: TOTAL DEL PEDIDO**
+        [NotMapped]
+        public decimal TotalRepuestos
+        {
+            get
+            {
+                if (Items == null || !Items.Any())
+                {
+                    return 0;
+                }
+                var total = Items.Sum(item =>
+                                     item.Repuestos?.Sum(repuesto => repuesto.Precio * repuesto.Cantidad) ?? 0);
+                return Math.Round(total, 2);
+            }
+        }
+
+        // **PROPIEDAD CALCULADA: PEDIDO VENCIDO**
+        [NotMapped]
+        public bool EstaVencido => FechaLlegada.Date < DateTime.Today.Date;
     }
 }

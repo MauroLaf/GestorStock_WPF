@@ -3,10 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GestorStock.API"
         mc:Ignorable="d"
-        Title="Agregar Ítem y Repuestos" Height="450" Width="600"
-        WindowStartupLocation="CenterScreen">
+        Title="Agregar Ítem y Repuestos" Height="500" Width="600">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,7 +13,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -23,40 +23,49 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Label Content="Tipo de Explotación:" Grid.Row="0" Grid.Column="0" Margin="5"/>
-        <ComboBox x:Name="TipoExplotacionComboBox" Grid.Row="0" Grid.Column="1" Margin="5" DisplayMemberPath="Nombre"/>
+        <TextBlock Text="Tipo de Explotación:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="TipoExplotacionComboBox" Grid.Row="0" Grid.Column="1" Margin="0,5" DisplayMemberPath="Nombre"/>
 
-        <Label Content="Tipo de Ítem:" Grid.Row="1" Grid.Column="0" Margin="5"/>
-        <ComboBox x:Name="TipoItemComboBox" Grid.Row="1" Grid.Column="1" Margin="5" DisplayMemberPath="Nombre"/>
+        <TextBlock Text="Tipo de Soporte:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="TipoSoporteComboBox" Grid.Row="1" Grid.Column="1" Margin="0,5" DisplayMemberPath="Nombre"/>
 
-        <Label Content="Nombre del Ítem:" Grid.Row="2" Grid.Column="0" Margin="5"/>
-        <TextBox x:Name="NombreItemTextBox" Grid.Row="2" Grid.Column="1" Margin="5"/>
+        <TextBlock Text="Nombre Ubicación:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="NombreUbicacionTextBox" Grid.Row="2" Grid.Column="1" Margin="0,5"/>
 
-        <Label Content="Tipo de Repuesto:" Grid.Row="3" Grid.Column="0" Margin="5"/>
-        <ComboBox x:Name="TipoRepuestoComboBox" Grid.Row="3" Grid.Column="1" Margin="5" DisplayMemberPath="Nombre"/>
+        <TextBlock Text="Tipo de Repuesto:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="TipoRepuestoComboBox" Grid.Row="3" Grid.Column="1" Margin="0,5" DisplayMemberPath="Nombre"/>
 
-        <Label Content="Repuesto:" Grid.Row="4" Grid.Column="0" Margin="5"/>
-        <TextBox x:Name="RepuestoTextBox" Grid.Row="4" Grid.Column="1" Margin="5"/>
+        <TextBlock Text="Repuesto:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="RepuestoTextBox" Grid.Row="4" Grid.Column="1" Margin="0,5"/>
 
-        <Label Content="Cantidad:" Grid.Row="5" Grid.Column="0" Margin="5"/>
-        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="5">
-            <TextBox x:Name="CantidadTextBox" Width="100"/>
-            <Button x:Name="AddRepuestoButton" Content="Agregar Repuesto" Margin="10,0,0,0"/>
-            <Button x:Name="EditRepuestoButton" Content="Editar Repuesto" Margin="10,0,0,0"/>
-            <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Margin="10,0,0,0"/>
-        </StackPanel>
+        <TextBlock Text="Precio (€):" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="PrecioTextBox" Grid.Row="5" Grid.Column="1" Margin="0,5"/>
 
-        <DataGrid x:Name="RepuestosDataGrid" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="5" AutoGenerateColumns="False" IsReadOnly="True">
+        <TextBlock Text="Cantidad:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="CantidadTextBox" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
+
+        <DataGrid x:Name="RepuestosDataGrid" Grid.Row="7" Grid.ColumnSpan="2" AutoGenerateColumns="False" Margin="0,10,0,0" IsReadOnly="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
-                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="150"/>
-                <DataGridTextColumn Header="Tipo de Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="150"/>
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="Auto"/>
+                <DataGridTextColumn Header="Tipo Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
 
-        <StackPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-            <Button x:Name="AcceptButton" Content="Aceptar" Width="80" Margin="5"/>
-            <Button x:Name="CancelButton" Content="Cancelar" Width="80" Margin="5"/>
+        <Grid Grid.Row="8" Grid.ColumnSpan="2" HorizontalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="AddRepuestoButton" Content="Agregar Repuesto" Grid.Column="0" Margin="5"/>
+            <Button x:Name="EditRepuestoButton" Content="Editar Repuesto" Grid.Column="1" Margin="5"/>
+            <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Grid.Column="2" Margin="5"/>
+        </Grid>
+
+        <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="AceptarButton" Content="Aceptar" Width="120" Margin="5"/>
+            <Button x:Name="CancelarButton" Content="Cancelar" Width="120" Margin="5"/>
         </StackPanel>
     </Grid>
 </Window>

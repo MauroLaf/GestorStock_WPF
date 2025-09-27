@@ -21,7 +21,7 @@ namespace GestorStock.Services.Implementations
         {
             return await _context.Items
                                    .Include(i => i.TipoExplotacion)
-                                   .Include(i => i.TipoItem)
+                                   .Include(i => i.TipoSoporte)
                                    .Include(i => i.Repuestos)
                                        .ThenInclude(r => r.TipoRepuesto)
                                    .ToListAsync();
@@ -31,7 +31,7 @@ namespace GestorStock.Services.Implementations
         {
             return await _context.Items
                                    .Include(i => i.TipoExplotacion)
-                                   .Include(i => i.TipoItem)
+                                   .Include(i => i.TipoSoporte)
                                    .Include(i => i.Repuestos)
                                        .ThenInclude(r => r.TipoRepuesto)
                                    .FirstOrDefaultAsync(i => i.Id == id);
@@ -52,9 +52,9 @@ namespace GestorStock.Services.Implementations
             if (existingItem != null)
             {
                 // 1. Actualiza las propiedades básicas del ítem.
-                existingItem.NombreItem = item.NombreItem;
+                existingItem.NombreUbicacion = item.NombreUbicacion;
                 existingItem.TipoExplotacion = item.TipoExplotacion;
-                existingItem.TipoItem = item.TipoItem;
+                existingItem.TipoSoporte = item.TipoSoporte;
 
                 // 2. Sincroniza la colección de repuestos.
                 var incomingRepuestos = item.Repuestos.ToList();
