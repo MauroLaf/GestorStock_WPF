@@ -55,10 +55,6 @@ namespace GestorStock.Data.Migrations
                     b.Property<int>("PedidoId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Tipo")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
                     b.Property<int>("TipoExplotacionId")
                         .HasColumnType("int");
 
@@ -125,6 +121,9 @@ namespace GestorStock.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
                     b.Property<int>("TipoRepuestoId")
                         .HasColumnType("int");
 
@@ -132,7 +131,7 @@ namespace GestorStock.Data.Migrations
 
                     b.HasIndex("ItemId");
 
-                    b.HasIndex("TipoRepuestoId");
+                    b.HasIndex("Tipo");
 
                     b.ToTable("Repuestos");
                 });
@@ -290,7 +289,7 @@ namespace GestorStock.Data.Migrations
 
                     b.HasOne("GestorStock.Model.Entities.TipoRepuesto", "TipoRepuesto")
                         .WithMany("Repuestos")
-                        .HasForeignKey("TipoRepuestoId")
+                        .HasForeignKey("Tipo")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

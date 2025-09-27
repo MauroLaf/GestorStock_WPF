@@ -23,7 +23,7 @@ namespace GestorStock.Data.Repositories
         public DbSet<Explotacion> Explotaciones { get; set; }
         public DbSet<TipoRepuesto> TipoRepuestos { get; set; }
         public DbSet<TipoExplotacion> TipoExplotaciones { get; set; }
-        public DbSet<TipoItem> TiposItem { get; set; } // ¡Añade esta línea!
+        public DbSet<TipoItem> TiposItem { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -58,18 +58,21 @@ namespace GestorStock.Data.Repositories
                 .HasForeignKey(i => i.TipoExplotacionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // *** ¡CORRECCIÓN CRÍTICA AQUÍ! ***
             // Relación uno a muchos entre TipoRepuesto y Repuesto
-            modelBuilder.Entity<TipoRepuesto>()
-                .HasMany(tr => tr.Repuestos)
-                .WithOne(r => r.TipoRepuesto)
-                .HasForeignKey(r => r.TipoRepuestoId);
+            // Forzamos a Entity Framework a usar la columna 'Tipo' en lugar de la convención TipoRepuestoId
+            modelBuilder.Entity<Repuesto>()
+                .HasOne(r => r.TipoRepuesto)
+                .WithMany(tr => tr.Repuestos)
+                .HasForeignKey("Tipo") // <-- ¡La clave foránea se llama 'Tipo'!
+                .IsRequired(); // <-- ¡Aseguramos que el campo sea requerido!
 
-            // ¡Añade esta nueva relación!
             // Relación uno a muchos entre TipoItem e Item
-            modelBuilder.Entity<TipoItem>()
-                        .HasMany(ti => ti.Items)
-                        .WithOne(i => i.TipoItem)
-                        .HasForeignKey(i => i.TipoItemId); // ¡Aquí la clave es TipoItemId, no i.Tipo!
+            modelBuilder.Entity<Item>()
+                .HasOne(i => i.TipoItem)
+                .WithMany(ti => ti.Items)
+                .HasForeignKey(i => i.TipoItemId)
+                .IsRequired();
 
             // Inicializar datos para TipoRepuesto, TipoExplotacion y TipoItem
             modelBuilder.Entity<TipoRepuesto>().HasData(
@@ -84,7 +87,6 @@ namespace GestorStock.Data.Repositories
                 new TipoExplotacion { Id = 4, Nombre = "SKYLED" }
             );
 
-            // ¡Añade estos datos iniciales!
             modelBuilder.Entity<TipoItem>().HasData(
                 new TipoItem { Id = 1, Nombre = "Pantalla" },
                 new TipoItem { Id = 2, Nombre = "Mupis" },

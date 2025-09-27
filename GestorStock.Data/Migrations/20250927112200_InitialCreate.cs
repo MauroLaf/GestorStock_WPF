@@ -110,13 +110,11 @@ namespace GestorStock.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Tipo = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
                     PedidoId = table.Column<int>(type: "int", nullable: false),
                     NombreItem = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    TipoExplotacionId = table.Column<int>(type: "int", nullable: false),
                     TipoItemId = table.Column<int>(type: "int", nullable: false),
+                    TipoExplotacionId = table.Column<int>(type: "int", nullable: false),
                     ExplotacionId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -160,7 +158,8 @@ namespace GestorStock.Data.Migrations
                     Descripcion = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     ItemId = table.Column<int>(type: "int", nullable: false),
-                    TipoRepuestoId = table.Column<int>(type: "int", nullable: false)
+                    TipoRepuestoId = table.Column<int>(type: "int", nullable: false),
+                    Tipo = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -172,8 +171,8 @@ namespace GestorStock.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Repuestos_TipoRepuestos_TipoRepuestoId",
-                        column: x => x.TipoRepuestoId,
+                        name: "FK_Repuestos_TipoRepuestos_Tipo",
+                        column: x => x.Tipo,
                         principalTable: "TipoRepuestos",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -242,9 +241,9 @@ namespace GestorStock.Data.Migrations
                 column: "ItemId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Repuestos_TipoRepuestoId",
+                name: "IX_Repuestos_Tipo",
                 table: "Repuestos",
-                column: "TipoRepuestoId");
+                column: "Tipo");
         }
 
         /// <inheritdoc />
