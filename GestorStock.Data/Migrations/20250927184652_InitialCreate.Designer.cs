@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestorStock.Data.Migrations
 {
     [DbContext(typeof(StockDbContext))]
-    [Migration("20250927170615_InitialCreate")]
+    [Migration("20250927184652_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -89,13 +89,13 @@ namespace GestorStock.Data.Migrations
                     b.Property<string>("DescripcionIncidencia")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("Fecha")
+                    b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("FechaIncidencia")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("FechaLlegada")
+                    b.Property<DateTime?>("FechaLlegada")
                         .HasColumnType("datetime(6)");
 
                     b.Property<bool>("Incidencia")

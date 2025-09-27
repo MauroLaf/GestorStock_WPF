@@ -23,14 +23,14 @@ namespace GestorStock.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Fecha = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     Descripcion = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Incidencia = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     FechaIncidencia = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     DescripcionIncidencia = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    FechaLlegada = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    FechaLlegada = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
                 {

@@ -22,10 +22,9 @@ namespace GestorStock.API
         private readonly ITipoItemService _tipoItemService;
 
         private ObservableCollection<Item> _items;
-        private Pedido _pedido;
+        public Pedido PedidoResult { get; private set; }
 
         public CreatePedidoWindow(
-            // ORDEN CORREGIDO para que coincida con MainWindow
             IPedidoService pedidoService,
             IRepuestoService repuestoService,
             ITipoExplotacionService tipoExplotacionService,
@@ -47,19 +46,18 @@ namespace GestorStock.API
 
             if (pedidoToEdit != null)
             {
-                _pedido = pedidoToEdit;
+                PedidoResult = pedidoToEdit;
                 this.Title = "Editar Pedido";
                 LoadPedidoData();
             }
             else
             {
-                _pedido = new Pedido
+                PedidoResult = new Pedido
                 {
-                    FechaLlegada = DateTime.Now // <--- Cambio aquí
+                    FechaCreacion = DateTime.Now
                 };
             }
 
-            this.Loaded += CreatePedidoWindow_Loaded;
             AddItemButton.Click += AddItemButton_Click;
             EditItemButton.Click += EditItemButton_Click;
             DeleteItemButton.Click += DeleteItemButton_Click;
@@ -67,32 +65,21 @@ namespace GestorStock.API
             CancelarButton.Click += CancelarButton_Click;
         }
 
-        private void CreatePedidoWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (_pedido?.Items != null)
-            {
-                foreach (var item in _pedido.Items)
-                {
-                    _items.Add(item);
-                }
-            }
-        }
-
         private void LoadPedidoData()
         {
-            if (_pedido == null) return;
-            DescripcionTextBox.Text = _pedido.Descripcion;
-            IncidenciaCheckBox.IsChecked = _pedido.Incidencia;
-            if (_pedido.FechaIncidencia.HasValue)
-            {
-                IncidenciaDatePicker.SelectedDate = _pedido.FechaIncidencia.Value;
-            }
-            DescripcionIncidenciaTextBox.Text = _pedido.DescripcionIncidencia;
+            if (PedidoResult == null) return;
+            DescripcionTextBox.Text = PedidoResult.Descripcion;
+            IncidenciaCheckBox.IsChecked = PedidoResult.Incidencia;
 
-            if (_pedido.Items != null)
+            IncidenciaDatePicker.SelectedDate = PedidoResult.FechaIncidencia;
+            FechaLlegadaDatePicker.SelectedDate = PedidoResult.FechaLlegada;
+
+            DescripcionIncidenciaTextBox.Text = PedidoResult.DescripcionIncidencia;
+
+            if (PedidoResult.Items != null)
             {
                 _items.Clear();
-                foreach (var item in _pedido.Items)
+                foreach (var item in PedidoResult.Items)
                 {
                     _items.Add(item);
                 }
@@ -101,8 +88,6 @@ namespace GestorStock.API
 
         private void AddItemButton_Click(object sender, RoutedEventArgs e)
         {
-            // La fecha de llegada se mantiene en el objeto Pedido, no en el Item.
-            // Por lo tanto, no se necesita pasar ni asignar aquí.
             var addItemWindow = new AddItemWindow(
                 _tipoExplotacionService,
                 _repuestoService,
@@ -133,9 +118,6 @@ namespace GestorStock.API
 
             if (editItemWindow.ShowDialog() == true)
             {
-                // No es necesario remover y volver a agregar.
-                // Como pasaste el objeto por referencia, ya está actualizado.
-                // Solo necesitas refrescar la vista.
                 ItemsDataGrid.Items.Refresh();
             }
         }
@@ -154,31 +136,23 @@ namespace GestorStock.API
 
         private async void GuardarPedidoButton_Click(object sender, RoutedEventArgs e)
         {
-            // Calcular el precio total del pedido
-            decimal totalPedido = 0;
-            foreach (var item in _items)
-            {
-                if (item.Repuestos != null)
-                {
-                    totalPedido += item.Repuestos.Sum(r => r.Cantidad * r.Precio);
-                }
-            }
+            PedidoResult.Descripcion = DescripcionTextBox.Text;
+            PedidoResult.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
 
-            _pedido.Descripcion = DescripcionTextBox.Text;
-            _pedido.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
-            _pedido.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
-            _pedido.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
-            _pedido.Items = _items.ToList();
-            
+            PedidoResult.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
+            PedidoResult.FechaLlegada = FechaLlegadaDatePicker.SelectedDate;
 
-            if (_pedido.Id == 0)
+            PedidoResult.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
+            PedidoResult.Items = _items.ToList();
+
+            if (PedidoResult.Id == 0)
             {
-                await _pedidoService.CreatePedidoAsync(_pedido);
+                await _pedidoService.CreatePedidoAsync(PedidoResult);
                 MessageBox.Show("Pedido creado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                await _pedidoService.UpdatePedidoAsync(_pedido);
+                await _pedidoService.UpdatePedidoAsync(PedidoResult);
                 MessageBox.Show("Pedido actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 

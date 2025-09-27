@@ -86,13 +86,13 @@ namespace GestorStock.Data.Migrations
                     b.Property<string>("DescripcionIncidencia")
                         .HasColumnType("longtext");
 
-                    b.Property<DateTime>("Fecha")
+                    b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("FechaIncidencia")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("FechaLlegada")
+                    b.Property<DateTime?>("FechaLlegada")
                         .HasColumnType("datetime(6)");
 
                     b.Property<bool>("Incidencia")
