@@ -54,14 +54,12 @@
 
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
-                <DataGridTextColumn Header="Fecha de Creación" Binding="{Binding FechaCreacion, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
+                <DataGridTextColumn Header="Fecha de Creación" Binding="{Binding FechaCreacion, StringFormat='{}{0:dd/MM/yyyy}'}" Width="*"/>
                 <DataGridTextColumn Header="Total (€)" Binding="{Binding Path=Items, Converter={StaticResource PedidoTotalConverter}, StringFormat=C}" Width="Auto"/>
-
-                <DataGridTextColumn Header="Fecha de Llegada" Binding="{Binding FechaLlegada, StringFormat=d}" Width="Auto"/>
-
+                <DataGridTextColumn Header="Fecha de Llegada" Binding="{Binding FechaLlegada, StringFormat='{}{0:dd/MM/yyyy}'}" Width="*"/>
                 <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
                 <DataGridCheckBoxColumn Header="Incidencia" Binding="{Binding Incidencia}" Width="Auto"/>
-                <DataGridTextColumn Header="Fecha Incidencia" Binding="{Binding FechaIncidencia, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
+                <DataGridTextColumn Header="Fecha Incidencia" Binding="{Binding FechaIncidencia, StringFormat='{}{0:dd/MM/yyyy}'}" Width="Auto"/>
                 <DataGridTextColumn Header="Descripción Incidencia" Binding="{Binding DescripcionIncidencia}" Width="*"/>
             </DataGrid.Columns>
 

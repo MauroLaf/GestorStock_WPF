@@ -35,6 +35,7 @@ namespace GestorStock.API
             _tipoItemService = tipoItemService;
             _itemService = itemService;
 
+            // Inicializa la ObservableCollection y la asigna al DataGrid
             _pedidos = new ObservableCollection<Pedido>();
             PedidosDataGrid.ItemsSource = _pedidos;
 
@@ -88,6 +89,7 @@ namespace GestorStock.API
             try
             {
                 var pedidos = await _pedidoService.GetAllPedidosWithDetailsAsync();
+                // Limpia y rellena la colección para forzar la actualización completa del DataGrid
                 _pedidos.Clear();
                 foreach (var pedido in pedidos)
                 {
@@ -208,7 +210,7 @@ namespace GestorStock.API
 
         private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Este método puede quedar vacío si no necesitas manejar el evento de selección
+            // Este método puede quedar vacío
         }
     }
 }

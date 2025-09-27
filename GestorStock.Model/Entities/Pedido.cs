@@ -27,7 +27,8 @@ namespace GestorStock.Model.Entities
                 {
                     _fechaLlegada = value;
                     OnPropertyChanged(nameof(FechaLlegada));
-                    OnPropertyChanged(nameof(EstaVencido)); // Notifica el cambio de la propiedad calculada
+                    // Notifica el cambio de la propiedad calculada
+                    OnPropertyChanged(nameof(EstaVencido));
                 }
             }
         }
@@ -35,7 +36,7 @@ namespace GestorStock.Model.Entities
         public ICollection<Item> Items { get; set; } = new List<Item>();
 
         [NotMapped]
-        public bool EstaVencido => FechaLlegada.HasValue && FechaLlegada.Value.Date < DateTime.Today.Date;
+        public bool EstaVencido => FechaLlegada.HasValue && FechaLlegada.Value.Date <= DateTime.Today.Date;
 
         protected void OnPropertyChanged(string propertyName)
         {
