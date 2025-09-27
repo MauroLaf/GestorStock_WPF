@@ -38,7 +38,6 @@ namespace GestorStock.API
             ItemResult = itemToEdit ?? new Item();
             this.Title = itemToEdit != null ? "Editar Ítem" : "Agregar Ítem";
 
-            // Se inicializa la colección de repuestos con los del ítem si existen.
             _repuestos = new ObservableCollection<Repuesto>(ItemResult.Repuestos ?? new List<Repuesto>());
             RepuestosDataGrid.ItemsSource = _repuestos;
 
@@ -80,8 +79,6 @@ namespace GestorStock.API
         {
             NombreUbicacionTextBox.Text = ItemResult.NombreUbicacion;
 
-            // Lógica corregida para cargar las selecciones de los ComboBoxes.
-            // Se busca el objeto en el ItemsSource usando el ID del ítem, si existe.
             if (ItemResult.TipoExplotacionId != 0)
             {
                 TipoExplotacionComboBox.SelectedItem = (TipoExplotacionComboBox.ItemsSource as IEnumerable<TipoExplotacion>)?.FirstOrDefault(t => t.Id == ItemResult.TipoExplotacionId);
@@ -92,7 +89,6 @@ namespace GestorStock.API
                 TipoSoporteComboBox.SelectedItem = (TipoSoporteComboBox.ItemsSource as IEnumerable<TipoSoporte>)?.FirstOrDefault(t => t.Id == ItemResult.TipoItemId);
             }
 
-            // Cargar los repuestos del ítem si los tiene
             _repuestos.Clear();
             if (ItemResult.Repuestos != null)
             {
@@ -173,10 +169,12 @@ namespace GestorStock.API
                 return;
             }
 
+            // Aquí se cargan los valores del repuesto seleccionado a los campos de texto y combobox.
             RepuestoTextBox.Text = selectedRepuesto.Nombre;
             CantidadTextBox.Text = selectedRepuesto.Cantidad.ToString();
             PrecioTextBox.Text = selectedRepuesto.Precio.ToString();
 
+            // Esto es crucial: se busca el TipoRepuesto por su ID para garantizar que se seleccione el objeto correcto del ComboBox.
             if (selectedRepuesto.TipoRepuestoId.HasValue)
             {
                 TipoRepuestoComboBox.SelectedItem = (TipoRepuestoComboBox.ItemsSource as IEnumerable<TipoRepuesto>)?.FirstOrDefault(t => t.Id == selectedRepuesto.TipoRepuestoId.Value);
@@ -202,12 +200,15 @@ namespace GestorStock.API
         {
             ItemResult.NombreUbicacion = NombreUbicacionTextBox.Text;
 
+            // Se asigna la relación completa del objeto, no solo el ID.
             ItemResult.TipoExplotacion = TipoExplotacionComboBox.SelectedItem as TipoExplotacion;
             ItemResult.TipoExplotacionId = ItemResult.TipoExplotacion?.Id ?? 0;
 
+            // Se asigna la relación completa del objeto, no solo el ID.
             ItemResult.TipoSoporte = TipoSoporteComboBox.SelectedItem as TipoSoporte;
             ItemResult.TipoItemId = ItemResult.TipoSoporte?.Id ?? 0;
 
+            // Asigna la colección de repuestos a la propiedad del ítem.
             ItemResult.Repuestos = _repuestos.ToList();
 
             this.DialogResult = true;
