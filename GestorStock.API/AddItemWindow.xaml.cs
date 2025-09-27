@@ -45,6 +45,12 @@ namespace GestorStock.API
             AceptarButton.Click += AceptarButton_Click;
             CancelarButton.Click += CancelarButton_Click;
             CantidadTextBox.PreviewTextInput += CantidadTextBox_PreviewTextInput;
+            // Asegúrate de que este evento esté en tu XAML
+            // <TextBox Name="PrecioTextBox" PreviewTextInput="PrecioTextBox_PreviewTextInput"/>
+            if (PrecioTextBox != null)
+            {
+                PrecioTextBox.PreviewTextInput += PrecioTextBox_PreviewTextInput;
+            }
         }
 
         // Constructor para EDITAR un ítem existente
@@ -53,17 +59,15 @@ namespace GestorStock.API
         {
             ItemResult = itemToEdit;
             this.Title = "Editar Ítem";
-            // La carga de datos se manejará en el evento Loaded
         }
 
         private async void AddItemWindow_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Carga los ComboBox de forma más simple
                 TipoExplotacionComboBox.ItemsSource = await _tipoExplotacionService.GetAllTipoExplotacionAsync();
                 TipoSoporteComboBox.ItemsSource = await _tipoItemService.GetAllTipoItemAsync();
-                TipoRepuestoComboBox.ItemsSource = await _tipoRepuestoService.GetAllTipoRepuestoAsync(); // Carga de tipos de repuesto
+                TipoRepuestoComboBox.ItemsSource = await _tipoRepuestoService.GetAllTipoRepuestoAsync();
 
                 if (ItemResult.Id != 0)
                 {
@@ -82,7 +86,6 @@ namespace GestorStock.API
         {
             NombreUbicacionTextBox.Text = ItemResult.NombreUbicacion;
 
-            // Acceso seguro con ?
             TipoExplotacionComboBox.SelectedItem = (TipoExplotacionComboBox.ItemsSource as IEnumerable<TipoExplotacion>)?.FirstOrDefault(t => t.Id == ItemResult.TipoExplotacionId);
             TipoSoporteComboBox.SelectedItem = (TipoSoporteComboBox.ItemsSource as IEnumerable<TipoSoporte>)?.FirstOrDefault(t => t.Id == ItemResult.TipoItemId);
 
@@ -98,57 +101,76 @@ namespace GestorStock.API
 
         private void AddRepuestoButton_Click(object sender, RoutedEventArgs e)
         {
-            // Se usa RepuestoTextBox en lugar de RepuestoComboBox
+            // Mover las declaraciones al inicio del método para corregir el error de alcance
+            int cantidad = 0;
+            TipoRepuesto? selectedTipoRepuesto = null;
+            decimal precio = 0;
+
             if (string.IsNullOrWhiteSpace(RepuestoTextBox.Text) || string.IsNullOrWhiteSpace(CantidadTextBox.Text))
             {
                 MessageBox.Show("Debe ingresar un nombre para el repuesto y la cantidad.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            if (!int.TryParse(CantidadTextBox.Text, out int cantidad) || cantidad <= 0)
+            if (!int.TryParse(CantidadTextBox.Text, out cantidad) || cantidad <= 0)
             {
                 MessageBox.Show("La cantidad debe ser un número entero positivo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            
-            // Se usa TipoRepuestoComboBox para obtener el tipo
-            TipoRepuesto? selectedTipoRepuesto = TipoRepuestoComboBox.SelectedItem as TipoRepuesto;
-            if (selectedTipoRepuesto == null)
+
+            if (string.IsNullOrWhiteSpace(PrecioTextBox.Text))
             {
-                 MessageBox.Show("Debe seleccionar un tipo de repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                 return;
+                MessageBox.Show("Debe ingresar el precio del repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!decimal.TryParse(PrecioTextBox.Text, out precio) || precio < 0)
+            {
+                MessageBox.Show("El precio debe ser un número válido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
 
+            selectedTipoRepuesto = TipoRepuestoComboBox.SelectedItem as TipoRepuesto;
+            if (selectedTipoRepuesto == null)
+            {
+                MessageBox.Show("Debe seleccionar un tipo de repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
+            // Lógica para agregar o editar
             if (_isEditingRepuesto)
             {
                 var repuestoToEdit = RepuestosDataGrid.SelectedItem as Repuesto;
                 if (repuestoToEdit != null)
                 {
-                    repuestoToEdit.Nombre = RepuestoTextBox.Text; // Usa el texto del TextBox
+                    repuestoToEdit.Nombre = RepuestoTextBox.Text;
                     repuestoToEdit.Cantidad = cantidad;
+                    repuestoToEdit.Precio = precio;
                     repuestoToEdit.TipoRepuesto = selectedTipoRepuesto;
                     repuestoToEdit.TipoRepuestoId = selectedTipoRepuesto.Id;
-                    RepuestosDataGrid.Items.Refresh();
                 }
-                AddRepuestoButton.Content = "Agregar Repuesto";
-                _isEditingRepuesto = false;
             }
             else
             {
                 var newRepuesto = new Repuesto
                 {
-                    Nombre = RepuestoTextBox.Text, // Usa el texto del TextBox
+                    Nombre = RepuestoTextBox.Text,
                     Cantidad = cantidad,
+                    Precio = precio,
                     TipoRepuesto = selectedTipoRepuesto,
                     TipoRepuestoId = selectedTipoRepuesto.Id
                 };
                 _repuestos.Add(newRepuesto);
             }
 
+            RepuestosDataGrid.Items.Refresh();
+
+            // Restablecer el estado
             RepuestoTextBox.Clear();
             CantidadTextBox.Clear();
+            PrecioTextBox.Clear();
             TipoRepuestoComboBox.SelectedIndex = -1;
+            AddRepuestoButton.Content = "Agregar Repuesto";
+            _isEditingRepuesto = false;
         }
 
         private void EditRepuestoButton_Click(object sender, RoutedEventArgs e)
@@ -159,12 +181,13 @@ namespace GestorStock.API
                 MessageBox.Show("Por favor, selecciona un repuesto para editar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            
+
             RepuestoTextBox.Text = selectedRepuesto.Nombre;
             CantidadTextBox.Text = selectedRepuesto.Cantidad.ToString();
-            
-            // Si el repuesto tiene un tipo, lo selecciona
-            if(selectedRepuesto.TipoRepuestoId != null)
+            // Asegúrate de que esta línea esté presente
+            PrecioTextBox.Text = selectedRepuesto.Precio.ToString();
+
+            if (selectedRepuesto.TipoRepuestoId != null)
             {
                 TipoRepuestoComboBox.SelectedItem = (TipoRepuestoComboBox.ItemsSource as IEnumerable<TipoRepuesto>)?.FirstOrDefault(t => t.Id == selectedRepuesto.TipoRepuestoId);
             }
@@ -237,6 +260,12 @@ namespace GestorStock.API
         {
             Regex regex = new Regex("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
+        }
+
+        private void PrecioTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex("^[0-9]+([,][0-9]{1,2})?$");
+            e.Handled = !regex.IsMatch(e.Text);
         }
     }
 }

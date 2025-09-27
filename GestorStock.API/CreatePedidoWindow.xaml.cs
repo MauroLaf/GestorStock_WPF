@@ -7,6 +7,7 @@ using System.Runtime.Versioning;
 using System;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Collections.Generic;
 
 namespace GestorStock.API
 {
@@ -100,6 +101,8 @@ namespace GestorStock.API
 
         private void AddItemButton_Click(object sender, RoutedEventArgs e)
         {
+            // La fecha de llegada se mantiene en el objeto Pedido, no en el Item.
+            // Por lo tanto, no se necesita pasar ni asignar aquí.
             var addItemWindow = new AddItemWindow(
                 _tipoExplotacionService,
                 _repuestoService,
@@ -130,14 +133,10 @@ namespace GestorStock.API
 
             if (editItemWindow.ShowDialog() == true)
             {
-                var updatedItem = editItemWindow.ItemResult;
-
-                var index = _items.IndexOf(selectedItem);
-                if (index != -1)
-                {
-                    _items.RemoveAt(index);
-                    _items.Insert(index, updatedItem);
-                }
+                // No es necesario remover y volver a agregar.
+                // Como pasaste el objeto por referencia, ya está actualizado.
+                // Solo necesitas refrescar la vista.
+                ItemsDataGrid.Items.Refresh();
             }
         }
 
@@ -155,10 +154,14 @@ namespace GestorStock.API
 
         private async void GuardarPedidoButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!_items.Any())
+            // Calcular el precio total del pedido
+            decimal totalPedido = 0;
+            foreach (var item in _items)
             {
-                MessageBox.Show("El pedido debe contener al menos un ítem.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                if (item.Repuestos != null)
+                {
+                    totalPedido += item.Repuestos.Sum(r => r.Cantidad * r.Precio);
+                }
             }
 
             _pedido.Descripcion = DescripcionTextBox.Text;
@@ -166,6 +169,7 @@ namespace GestorStock.API
             _pedido.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
             _pedido.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
             _pedido.Items = _items.ToList();
+            
 
             if (_pedido.Id == 0)
             {

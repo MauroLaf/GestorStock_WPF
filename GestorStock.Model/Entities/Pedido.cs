@@ -18,22 +18,6 @@ namespace GestorStock.Model.Entities
 
         public ICollection<Item> Items { get; set; } = new List<Item>();
 
-        // **PROPIEDAD CALCULADA: TOTAL DEL PEDIDO**
-        [NotMapped]
-        public decimal TotalRepuestos
-        {
-            get
-            {
-                if (Items == null || !Items.Any())
-                {
-                    return 0;
-                }
-                var total = Items.Sum(item =>
-                                     item.Repuestos?.Sum(repuesto => repuesto.Precio * repuesto.Cantidad) ?? 0);
-                return Math.Round(total, 2);
-            }
-        }
-
         // **PROPIEDAD CALCULADA: PEDIDO VENCIDO**
         [NotMapped]
         public bool EstaVencido => FechaLlegada.Date < DateTime.Today.Date;

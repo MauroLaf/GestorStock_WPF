@@ -4,14 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GestorStock.API"
+        xmlns:converters="clr-namespace:GestorStock.API.Converters"
         mc:Ignorable="d"
-        Title="Gestor de Pedidos" Height="600" Width="1000">
+        Title="Gestor de Pedidos" Height="700" Width="1000">
 
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/GestorStock.API;component/ModernStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <converters:PedidoTotalConverter x:Key="PedidoTotalConverter"/>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -53,8 +56,9 @@
                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
                 <DataGridTextColumn Header="Fecha de Creación" Binding="{Binding FechaCreacion, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
 
-                <DataGridTextColumn Header="Total (€)" Binding="{Binding TotalRepuestos, StringFormat={}{0:N2} €}" Width="Auto"/>
-                <DataGridTextColumn Header="Fecha de Llegada" Binding="{Binding FechaEstimadaLlegada, StringFormat=d}" Width="Auto"/>
+                <DataGridTextColumn Header="Total (€)" Binding="{Binding Path=Items, Converter={StaticResource PedidoTotalConverter}, StringFormat=C}" Width="Auto"/>
+
+                <DataGridTextColumn Header="Fecha de Llegada" Binding="{Binding FechaLlegada, StringFormat=d}" Width="Auto"/>
 
                 <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" Width="*"/>
                 <DataGridCheckBoxColumn Header="Incidencia" Binding="{Binding Incidencia}" Width="Auto"/>
@@ -72,7 +76,6 @@
                                 <DataGridTextColumn Header="Explotación" Binding="{Binding TipoExplotacion.Nombre}" Width="Auto"/>
                                 <DataGridTextColumn Header="Nombre Ubicación" Binding="{Binding NombreUbicacion}" Width="*"/>
                             </DataGrid.Columns>
-
                             <DataGrid.RowDetailsTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="20,10" Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}, Path=ActualWidth}">
@@ -82,9 +85,7 @@
                                                 <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
                                                 <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="150"/>
                                                 <DataGridTextColumn Header="Tipo de Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="150"/>
-
                                                 <DataGridTextColumn Header="Precio (€)" Binding="{Binding Precio, StringFormat={}{0:N2} €}" Width="150"/>
-
                                                 <DataGridTemplateColumn Header="Acciones" Width="Auto">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate>
