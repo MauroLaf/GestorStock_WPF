@@ -15,6 +15,7 @@ namespace GestorStock.API
 
         public App()
         {
+            //Configuración de la licencia en EPPlus 8
             ExcelPackage.License.SetNonCommercialPersonal("MAURO");
 
             IServiceCollection services = new ServiceCollection();

@@ -3,6 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:GestorStock.API">
     <Application.Resources>
+
+        <Style TargetType="Window">
+            <Setter Property="Icon" Value="Assets/stock.ico"/>
+        </Style>
+
         <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#007ACC"/>
             <Setter Property="Foreground" Value="White"/>
