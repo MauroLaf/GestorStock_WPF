@@ -21,6 +21,7 @@ namespace GestorStock.API
 
         public ObservableCollection<Repuesto> _repuestos;
         public Item ItemResult { get; private set; }
+        private Repuesto? _repuestoToEdit; // Variable de control para el repuesto a editar
 
         public AddItemWindow(
             ITipoExplotacionService tipoExplotacionService,
@@ -44,6 +45,8 @@ namespace GestorStock.API
             this.Loaded += AddItemWindow_Loaded;
             AddRepuestoButton.Click += AddRepuestoButton_Click;
             EditRepuestoButton.Click += EditRepuestoButton_Click;
+            // Suscribe el nuevo botón al evento
+            UpdateRepuestoButton.Click += UpdateRepuestoButton_Click;
             DeleteRepuestoButton.Click += DeleteRepuestoButton_Click;
             AceptarButton.Click += AceptarButton_Click;
             CancelarButton.Click += CancelarButton_Click;
@@ -138,23 +141,19 @@ namespace GestorStock.API
             var existingRepuesto = _repuestos.FirstOrDefault(r => r.Nombre.Equals(RepuestoTextBox.Text, StringComparison.OrdinalIgnoreCase));
             if (existingRepuesto != null)
             {
-                existingRepuesto.Cantidad = cantidad;
-                existingRepuesto.Precio = precio;
-                existingRepuesto.TipoRepuesto = selectedTipoRepuesto;
-                existingRepuesto.TipoRepuestoId = selectedTipoRepuesto.Id;
+                MessageBox.Show("Ya existe un repuesto con ese nombre. Use la función de 'Editar' para modificarlo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
-            else
+
+            var newRepuesto = new Repuesto
             {
-                var newRepuesto = new Repuesto
-                {
-                    Nombre = RepuestoTextBox.Text,
-                    Cantidad = cantidad,
-                    Precio = precio,
-                    TipoRepuesto = selectedTipoRepuesto,
-                    TipoRepuestoId = selectedTipoRepuesto.Id
-                };
-                _repuestos.Add(newRepuesto);
-            }
+                Nombre = RepuestoTextBox.Text,
+                Cantidad = cantidad,
+                Precio = precio,
+                TipoRepuesto = selectedTipoRepuesto,
+                TipoRepuestoId = selectedTipoRepuesto.Id
+            };
+            _repuestos.Add(newRepuesto);
 
             RepuestosDataGrid.Items.Refresh();
             LimpiarCamposRepuesto();
@@ -169,12 +168,13 @@ namespace GestorStock.API
                 return;
             }
 
-            // Aquí se cargan los valores del repuesto seleccionado a los campos de texto y combobox.
+            _repuestoToEdit = selectedRepuesto;
+
+            // Se cargan los valores del repuesto seleccionado a los campos de texto y combobox.
             RepuestoTextBox.Text = selectedRepuesto.Nombre;
             CantidadTextBox.Text = selectedRepuesto.Cantidad.ToString();
             PrecioTextBox.Text = selectedRepuesto.Precio.ToString();
 
-            // Esto busca el TipoRepuesto por su ID para garantizar que se seleccione el objeto correcto del ComboBox.
             if (selectedRepuesto.TipoRepuestoId.HasValue)
             {
                 TipoRepuestoComboBox.SelectedItem = (TipoRepuestoComboBox.ItemsSource as IEnumerable<TipoRepuesto>)?.FirstOrDefault(t => t.Id == selectedRepuesto.TipoRepuestoId.Value);
@@ -183,6 +183,69 @@ namespace GestorStock.API
             {
                 TipoRepuestoComboBox.SelectedItem = null;
             }
+
+            // Oculta el botón de "Agregar" y muestra el de "Actualizar".
+            AddRepuestoButton.Visibility = Visibility.Collapsed;
+            UpdateRepuestoButton.Visibility = Visibility.Visible;
+        }
+
+        // Nuevo método para actualizar los cambios
+        private void UpdateRepuestoButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_repuestoToEdit == null)
+            {
+                MessageBox.Show("No se ha seleccionado ningún repuesto para actualizar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            int cantidad = 0;
+            decimal precio = 0;
+
+            if (string.IsNullOrWhiteSpace(RepuestoTextBox.Text) || string.IsNullOrWhiteSpace(CantidadTextBox.Text))
+            {
+                MessageBox.Show("Debe ingresar un nombre para el repuesto y la cantidad.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!int.TryParse(CantidadTextBox.Text, out cantidad) || cantidad <= 0)
+            {
+                MessageBox.Show("La cantidad debe ser un número entero positivo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(PrecioTextBox.Text))
+            {
+                MessageBox.Show("Debe ingresar el precio del repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (!decimal.TryParse(PrecioTextBox.Text, out precio) || precio < 0)
+            {
+                MessageBox.Show("El precio debe ser un número válido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            TipoRepuesto? selectedTipoRepuesto = TipoRepuestoComboBox.SelectedItem as TipoRepuesto;
+            if (selectedTipoRepuesto == null)
+            {
+                MessageBox.Show("Debe seleccionar un tipo de repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _repuestoToEdit.Nombre = RepuestoTextBox.Text;
+            _repuestoToEdit.Cantidad = cantidad;
+            _repuestoToEdit.Precio = precio;
+            _repuestoToEdit.TipoRepuesto = selectedTipoRepuesto;
+            _repuestoToEdit.TipoRepuestoId = selectedTipoRepuesto.Id;
+
+            // Refresca la vista del DataGrid
+            RepuestosDataGrid.Items.Refresh();
+
+            // Oculta el botón de "Actualizar" y muestra el de "Agregar".
+            AddRepuestoButton.Visibility = Visibility.Visible;
+            UpdateRepuestoButton.Visibility = Visibility.Collapsed;
+            _repuestoToEdit = null;
+
+            LimpiarCamposRepuesto();
         }
 
         private void DeleteRepuestoButton_Click(object sender, RoutedEventArgs e)
@@ -198,17 +261,18 @@ namespace GestorStock.API
 
         private void AceptarButton_Click(object sender, RoutedEventArgs e)
         {
-            ItemResult.NombreUbicacion = NombreUbicacionTextBox.Text;
+            // Valida si hay datos en los campos de ítem.
+            if (string.IsNullOrEmpty(NombreUbicacionTextBox.Text) || TipoExplotacionComboBox.SelectedItem == null || TipoSoporteComboBox.SelectedItem == null)
+            {
+                MessageBox.Show("Debe completar todos los campos del ítem para poder continuar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
-            // Se asigna la relación completa del objeto, no solo el ID.
+            ItemResult.NombreUbicacion = NombreUbicacionTextBox.Text;
             ItemResult.TipoExplotacion = TipoExplotacionComboBox.SelectedItem as TipoExplotacion;
             ItemResult.TipoExplotacionId = ItemResult.TipoExplotacion?.Id ?? 0;
-
-            
             ItemResult.TipoSoporte = TipoSoporteComboBox.SelectedItem as TipoSoporte;
             ItemResult.TipoItemId = ItemResult.TipoSoporte?.Id ?? 0;
-
-            // Asigna la colección de repuestos a la propiedad del ítem.
             ItemResult.Repuestos = _repuestos.ToList();
 
             this.DialogResult = true;

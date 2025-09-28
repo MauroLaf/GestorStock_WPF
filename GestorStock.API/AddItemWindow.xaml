@@ -57,10 +57,12 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Button x:Name="AddRepuestoButton" Content="Agregar Repuesto" Grid.Column="0" Margin="5"/>
             <Button x:Name="EditRepuestoButton" Content="Editar Repuesto" Grid.Column="1" Margin="5"/>
-            <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Grid.Column="2" Margin="5"/>
+            <Button x:Name="UpdateRepuestoButton" Content="Actualizar Repuesto" Grid.Column="2" Margin="5" Visibility="Collapsed"/>
+            <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Grid.Column="3" Margin="5"/>
         </Grid>
 
         <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
