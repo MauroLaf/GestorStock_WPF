@@ -4,10 +4,19 @@
              xmlns:local="clr-namespace:GestorStock.API">
     <Application.Resources>
 
+        <!-- Estilo global para todas las ventanas -->
         <Style TargetType="Window">
             <Setter Property="Icon" Value="Assets/stock.ico"/>
+            <!-- Fondo marrón claro global -->
+            <Setter Property="Background" Value="#D2B48C"/>
+        </Style>
+        <!-- Grid marrón claro global -->
+        <Style TargetType="Grid">
+            <Setter Property="Background" Value="#9FF5B3"/>
         </Style>
 
+
+        <!-- Estilo para botones -->
         <Style x:Key="ModernButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="#007ACC"/>
             <Setter Property="Foreground" Value="White"/>
@@ -36,5 +45,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
     </Application.Resources>
 </Application>
