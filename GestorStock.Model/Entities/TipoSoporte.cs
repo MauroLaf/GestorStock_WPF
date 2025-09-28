@@ -10,8 +10,6 @@ namespace GestorStock.Model.Entities
     {
         public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
-
-        // Agrega esta colección para la relación con la entidad Item
         public ICollection<Item> Items { get; set; } = new List<Item>();
     }
 }

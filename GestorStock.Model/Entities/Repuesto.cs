@@ -47,7 +47,6 @@ namespace GestorStock.Model.Entities
 
         public string Descripcion { get; set; } = string.Empty;
 
-        // **NUEVA PROPIEDAD: PRECIO**
         private decimal _precio;
         public decimal Precio
         {

@@ -174,7 +174,7 @@ namespace GestorStock.API
             CantidadTextBox.Text = selectedRepuesto.Cantidad.ToString();
             PrecioTextBox.Text = selectedRepuesto.Precio.ToString();
 
-            // Esto es crucial: se busca el TipoRepuesto por su ID para garantizar que se seleccione el objeto correcto del ComboBox.
+            // Esto busca el TipoRepuesto por su ID para garantizar que se seleccione el objeto correcto del ComboBox.
             if (selectedRepuesto.TipoRepuestoId.HasValue)
             {
                 TipoRepuestoComboBox.SelectedItem = (TipoRepuestoComboBox.ItemsSource as IEnumerable<TipoRepuesto>)?.FirstOrDefault(t => t.Id == selectedRepuesto.TipoRepuestoId.Value);
@@ -204,7 +204,7 @@ namespace GestorStock.API
             ItemResult.TipoExplotacion = TipoExplotacionComboBox.SelectedItem as TipoExplotacion;
             ItemResult.TipoExplotacionId = ItemResult.TipoExplotacion?.Id ?? 0;
 
-            // Se asigna la relación completa del objeto, no solo el ID.
+            
             ItemResult.TipoSoporte = TipoSoporteComboBox.SelectedItem as TipoSoporte;
             ItemResult.TipoItemId = ItemResult.TipoSoporte?.Id ?? 0;
 

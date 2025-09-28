@@ -24,7 +24,7 @@ namespace GestorStock.API
             // Configuración del DbContext
             services.AddDbContext<StockDbContext>();
 
-            // Registrar servicios de la capa de servicios como Singleton
+            // Registra servicios de la capa de servicios como Singleton
             services.AddSingleton<ITipoItemService, TipoItemService>();
             services.AddSingleton<IPedidoService, PedidoService>();
             services.AddSingleton<IItemService, ItemService>();
@@ -32,11 +32,10 @@ namespace GestorStock.API
             services.AddSingleton<IRepuestoService, RepuestoService>();
             services.AddSingleton<ITipoRepuestoService, TipoRepuestoService>(); // ¡Aquí se añade el servicio que faltaba!
 
-            // Registrar las ventanas como servicios transitorios
+            // Registra las ventanas como servicios transitorios
             services.AddTransient<MainWindow>();
             services.AddTransient<CreatePedidoWindow>();
             services.AddTransient<AddItemWindow>();
-            services.AddTransient<DiscountRepuestoWindow>();
         }
 
         protected override void OnStartup(StartupEventArgs e)

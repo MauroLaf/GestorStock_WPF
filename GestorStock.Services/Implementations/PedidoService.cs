@@ -28,29 +28,28 @@ namespace GestorStock.Services.Implementations
 
         public async Task<IEnumerable<Pedido>> GetAllPedidosWithDetailsAsync()
         {
-            // CORREGIDO: Añade la línea para cargar la relación TipoRepuesto.
             return await _context.Pedidos
                                  .Include(p => p.Items)
                                  .ThenInclude(i => i.TipoExplotacion)
                                  .Include(p => p.Items)
-                                 .ThenInclude(i => i.TipoSoporte) // Agrega esta línea para que se cargue TipoSoporte
+                                 .ThenInclude(i => i.TipoSoporte) 
                                  .Include(p => p.Items)
                                  .ThenInclude(i => i.Repuestos)
-                                 .ThenInclude(r => r.TipoRepuesto) // <<-- ESTA LÍNEA ES LA CLAVE
+                                 .ThenInclude(r => r.TipoRepuesto)
                                  .ToListAsync();
         }
 
         public async Task<Pedido?> GetPedidoByIdAsync(int id)
         {
-            // CORREGIDO: Añade la línea para cargar la relación TipoRepuesto en la búsqueda por ID.
+            // Añade la línea para cargar la relación TipoRepuesto en la búsqueda por ID.
             return await _context.Pedidos
                                  .Include(p => p.Items)
                                  .ThenInclude(i => i.TipoExplotacion)
                                  .Include(p => p.Items)
-                                 .ThenInclude(i => i.TipoSoporte) // Y esta también para que cargue TipoSoporte
+                                 .ThenInclude(i => i.TipoSoporte) 
                                  .Include(p => p.Items)
                                  .ThenInclude(i => i.Repuestos)
-                                 .ThenInclude(r => r.TipoRepuesto) // <<-- ESTA LÍNEA ES LA CLAVE
+                                 .ThenInclude(r => r.TipoRepuesto) 
                                  .FirstOrDefaultAsync(p => p.Id == id);
         }
 

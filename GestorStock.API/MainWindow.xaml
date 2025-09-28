@@ -105,7 +105,6 @@
             <Button Content="Crear Pedido" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="CreateButton"/>
             <Button Content="Editar Pedido" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="EditButton"/>
             <Button Content="Eliminar Pedido" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="DeleteButton"/>
-            <Button Content="Descontar Unidad" Margin="5" Padding="10,5" FontSize="14" FontWeight="Bold" Style="{StaticResource ModernButtonStyle}" x:Name="DiscountButton"/>
         </StackPanel>
     </Grid>
 </Window>

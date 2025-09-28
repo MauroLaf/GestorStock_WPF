@@ -210,7 +210,7 @@ namespace GestorStock.API
 
         private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Este método puede quedar vacío
+            // NOTE:Este método puede quedar vacío de momento
         }
     }
 }
