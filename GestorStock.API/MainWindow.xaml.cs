@@ -5,9 +5,7 @@ using GestorStock.Services.Interfaces;
 using Microsoft.Win32;
 using OfficeOpenXml;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -30,9 +28,12 @@ namespace GestorStock.API
         private ObservableCollection<Pedido> _pedidos;
         private bool _isExporting = false; // Variable de control
 
-        public MainWindow(IPedidoService pedidoService, IRepuestoService repuestoService, ITipoExplotacionService tipoExplotacionService, ITipoRepuestoService tipoRepuestoService, ITipoItemService tipoItemService, IItemService itemService)
+        public MainWindow(IPedidoService pedidoService, IRepuestoService repuestoService,
+            ITipoExplotacionService tipoExplotacionService, ITipoRepuestoService tipoRepuestoService,
+            ITipoItemService tipoItemService, IItemService itemService)
         {
             InitializeComponent();
+
             _pedidoService = pedidoService;
             _repuestoService = repuestoService;
             _tipoExplotacionService = tipoExplotacionService;
@@ -40,18 +41,18 @@ namespace GestorStock.API
             _tipoItemService = tipoItemService;
             _itemService = itemService;
 
-            // Inicializa la ObservableCollection y la asigna al DataGrid
             _pedidos = new ObservableCollection<Pedido>();
             PedidosDataGrid.ItemsSource = _pedidos;
 
             this.Loaded += MainWindow_Loaded;
+
             CreateButton.Click += CreateButton_Click;
             EditButton.Click += EditButton_Click;
             DeleteButton.Click += DeleteButton_Click;
             BuscarButton.Click += BuscarButton_Click;
             LimpiarButton.Click += LimpiarButton_Click;
-            ExportarExcelButton.Click += ExportarExcelButton_Click;
-            PedidosDataGrid.SelectionChanged += PedidosDataGrid_SelectionChanged; // Asegúrate de que esta línea esté presente
+            // NOTA: No se suscribe ExportarExcelButton aquí porque ya está en XAML
+            PedidosDataGrid.SelectionChanged += PedidosDataGrid_SelectionChanged;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -96,7 +97,6 @@ namespace GestorStock.API
             try
             {
                 var pedidos = await _pedidoService.GetAllPedidosWithDetailsAsync();
-                // Limpia y rellena la colección para forzar la actualización completa del DataGrid
                 _pedidos.Clear();
                 foreach (var pedido in pedidos)
                 {
@@ -123,9 +123,7 @@ namespace GestorStock.API
 
             _pedidos.Clear();
             foreach (var pedido in resultados)
-            {
                 _pedidos.Add(pedido);
-            }
         }
 
         private async void LimpiarButton_Click(object sender, RoutedEventArgs e)
@@ -146,9 +144,7 @@ namespace GestorStock.API
                 _itemService);
 
             if (createPedidoWindow.ShowDialog() == true)
-            {
                 await CargarTodosLosPedidosAsync();
-            }
         }
 
         private async void EditButton_Click(object sender, RoutedEventArgs e)
@@ -170,20 +166,13 @@ namespace GestorStock.API
                 selectedPedido);
 
             if (editPedidoWindow.ShowDialog() == true)
-            {
                 await CargarTodosLosPedidosAsync();
-            }
         }
 
-        [SupportedOSPlatform("windows")]
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedPedido = PedidosDataGrid.SelectedItem as Pedido;
-            if (selectedPedido == null)
-            {
-                MessageBox.Show("Por favor, selecciona un pedido para eliminar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            if (selectedPedido == null) return;
 
             if (MessageBox.Show("¿Estás seguro de que quieres eliminar este pedido?", "Confirmar Eliminación", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
@@ -196,14 +185,11 @@ namespace GestorStock.API
         {
             if (sender is Button button && button.Tag is int repuestoId)
             {
-                var result = MessageBox.Show("¿Estás seguro de que deseas eliminar este repuesto?", "Confirmar Eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.Yes)
+                if (MessageBox.Show("¿Estás seguro de que deseas eliminar este repuesto?", "Confirmar Eliminación", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
                 {
                     try
                     {
                         await _repuestoService.DeleteRepuestoAsync(repuestoId);
-
                         MessageBox.Show("Repuesto eliminado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
                         await CargarTodosLosPedidosAsync();
                     }
@@ -217,17 +203,12 @@ namespace GestorStock.API
 
         private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Este método está vacío pero es necesario para que el programa compile
-            // sin errores de XAML.
+            // Necesario para compilar XAML
         }
 
         private void ExportarExcelButton_Click(object sender, RoutedEventArgs e)
         {
-            // Salir si ya hay un proceso de exportación en curso
-            if (_isExporting)
-            {
-                return;
-            }
+            if (_isExporting) return;
 
             _isExporting = true;
             ExportarExcelButton.IsEnabled = false;
@@ -236,7 +217,7 @@ namespace GestorStock.API
             {
                 Filter = "Archivo de Excel (*.xlsx)|*.xlsx",
                 FileName = "Pedidos.xlsx",
-                OverwritePrompt = true // Esto asegura que la ventana de diálogo pregunte si se debe sobrescribir
+                OverwritePrompt = true
             };
 
             try
@@ -247,37 +228,21 @@ namespace GestorStock.API
 
                     using (var package = new ExcelPackage(file))
                     {
-                        ExcelWorksheet worksheet;
-                        if (package.Workbook.Worksheets.Any(ws => ws.Name == "Pedidos_Unificado"))
-                        {
-                            worksheet = package.Workbook.Worksheets["Pedidos_Unificado"];
-                            worksheet.Cells.Clear();
-                        }
-                        else
-                        {
-                            worksheet = package.Workbook.Worksheets.Add("Pedidos_Unificado");
-                        }
+                        var worksheet = package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == "Pedidos_Unificado")
+                            ?? package.Workbook.Worksheets.Add("Pedidos_Unificado");
+
+                        worksheet.Cells.Clear();
 
                         // Encabezados
-                        worksheet.Cells["A1"].Value = "ID Pedido";
-                        worksheet.Cells["B1"].Value = "Fecha Creación";
-                        worksheet.Cells["C1"].Value = "Descripción Pedido";
-                        worksheet.Cells["D1"].Value = "Incidencia";
-                        worksheet.Cells["E1"].Value = "Fecha Incidencia";
-                        worksheet.Cells["F1"].Value = "Fecha Llegada";
-                        worksheet.Cells["G1"].Value = "Descripción Incidencia";
+                        string[] headers = new string[]
+                        {
+                            "ID Pedido","Fecha Creación","Descripción Pedido","Incidencia","Fecha Incidencia","Fecha Llegada","Descripción Incidencia",
+                            "ID Item","Ubicación","Tipo Soporte","Tipo Explotación",
+                            "ID Repuesto","Nombre Repuesto","Cantidad","Descripción Repuesto","Precio","Tipo Repuesto"
+                        };
 
-                        worksheet.Cells["H1"].Value = "ID Item";
-                        worksheet.Cells["I1"].Value = "Ubicación";
-                        worksheet.Cells["J1"].Value = "Tipo Soporte";
-                        worksheet.Cells["K1"].Value = "Tipo Explotación";
-
-                        worksheet.Cells["L1"].Value = "ID Repuesto";
-                        worksheet.Cells["M1"].Value = "Nombre Repuesto";
-                        worksheet.Cells["N1"].Value = "Cantidad";
-                        worksheet.Cells["O1"].Value = "Descripción Repuesto";
-                        worksheet.Cells["P1"].Value = "Precio";
-                        worksheet.Cells["Q1"].Value = "Tipo Repuesto";
+                        for (int i = 0; i < headers.Length; i++)
+                            worksheet.Cells[1, i + 1].Value = headers[i];
 
                         int row = 2;
                         foreach (var pedido in _pedidos)
@@ -286,7 +251,6 @@ namespace GestorStock.API
                             {
                                 foreach (var repuesto in item.Repuestos)
                                 {
-                                    // Datos del pedido
                                     worksheet.Cells[row, 1].Value = pedido.Id;
                                     worksheet.Cells[row, 2].Value = pedido.FechaCreacion;
                                     worksheet.Cells[row, 2].Style.Numberformat.Format = "dd/MM/yyyy";
@@ -298,13 +262,11 @@ namespace GestorStock.API
                                     worksheet.Cells[row, 6].Style.Numberformat.Format = "dd/MM/yyyy";
                                     worksheet.Cells[row, 7].Value = pedido.DescripcionIncidencia;
 
-                                    // Datos del ítem
                                     worksheet.Cells[row, 8].Value = item.Id;
                                     worksheet.Cells[row, 9].Value = item.NombreUbicacion;
                                     worksheet.Cells[row, 10].Value = item.TipoSoporte?.Nombre;
                                     worksheet.Cells[row, 11].Value = item.TipoExplotacion?.Nombre;
 
-                                    // Datos del repuesto
                                     worksheet.Cells[row, 12].Value = repuesto.Id;
                                     worksheet.Cells[row, 13].Value = repuesto.Nombre;
                                     worksheet.Cells[row, 14].Value = repuesto.Cantidad;
@@ -317,27 +279,23 @@ namespace GestorStock.API
                             }
                         }
 
-                        // Aplica formato de tabla y autoajusta las columnas
-                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                        if (worksheet.Dimension != null)
+                            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
                         package.Save();
                     }
+
                     MessageBox.Show("Datos exportados a Excel correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    // Si el usuario cancela, no deshabilitamos el botón
-                    ExportarExcelButton.IsEnabled = true;
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al exportar a Excel: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                ExportarExcelButton.IsEnabled = true; // Habilitar el botón en caso de error
             }
             finally
             {
-                // En cualquier caso, al finalizar el proceso, restablece la bandera.
                 _isExporting = false;
+                ExportarExcelButton.IsEnabled = true;
             }
         }
     }
