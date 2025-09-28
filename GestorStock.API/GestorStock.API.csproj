@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\icons8-ms-excel-48.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPPlus" Version="8.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
@@ -21,6 +26,10 @@
   <ItemGroup>
     <ProjectReference Include="..\GestorStock.Data\GestorStock.Data.csproj" />
     <ProjectReference Include="..\GestorStock.Services\GestorStock.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\icons8-ms-excel-48.png" />
   </ItemGroup>
 
 </Project>

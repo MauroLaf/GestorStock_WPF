@@ -2,9 +2,13 @@
 using GestorStock.Model.Entities;
 using GestorStock.Services.Implementations;
 using GestorStock.Services.Interfaces;
+using Microsoft.Win32;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -24,6 +28,7 @@ namespace GestorStock.API
         private readonly IItemService _itemService;
 
         private ObservableCollection<Pedido> _pedidos;
+        private bool _isExporting = false; // Variable de control
 
         public MainWindow(IPedidoService pedidoService, IRepuestoService repuestoService, ITipoExplotacionService tipoExplotacionService, ITipoRepuestoService tipoRepuestoService, ITipoItemService tipoItemService, IItemService itemService)
         {
@@ -45,6 +50,8 @@ namespace GestorStock.API
             DeleteButton.Click += DeleteButton_Click;
             BuscarButton.Click += BuscarButton_Click;
             LimpiarButton.Click += LimpiarButton_Click;
+            ExportarExcelButton.Click += ExportarExcelButton_Click;
+            PedidosDataGrid.SelectionChanged += PedidosDataGrid_SelectionChanged; // Asegúrate de que esta línea esté presente
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -210,7 +217,128 @@ namespace GestorStock.API
 
         private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // NOTE:Este método puede quedar vacío de momento
+            // Este método está vacío pero es necesario para que el programa compile
+            // sin errores de XAML.
+        }
+
+        private void ExportarExcelButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Salir si ya hay un proceso de exportación en curso
+            if (_isExporting)
+            {
+                return;
+            }
+
+            _isExporting = true;
+            ExportarExcelButton.IsEnabled = false;
+
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "Archivo de Excel (*.xlsx)|*.xlsx",
+                FileName = "Pedidos.xlsx",
+                OverwritePrompt = true // Esto asegura que la ventana de diálogo pregunte si se debe sobrescribir
+            };
+
+            try
+            {
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    var file = new FileInfo(saveFileDialog.FileName);
+
+                    using (var package = new ExcelPackage(file))
+                    {
+                        ExcelWorksheet worksheet;
+                        if (package.Workbook.Worksheets.Any(ws => ws.Name == "Pedidos_Unificado"))
+                        {
+                            worksheet = package.Workbook.Worksheets["Pedidos_Unificado"];
+                            worksheet.Cells.Clear();
+                        }
+                        else
+                        {
+                            worksheet = package.Workbook.Worksheets.Add("Pedidos_Unificado");
+                        }
+
+                        // Encabezados
+                        worksheet.Cells["A1"].Value = "ID Pedido";
+                        worksheet.Cells["B1"].Value = "Fecha Creación";
+                        worksheet.Cells["C1"].Value = "Descripción Pedido";
+                        worksheet.Cells["D1"].Value = "Incidencia";
+                        worksheet.Cells["E1"].Value = "Fecha Incidencia";
+                        worksheet.Cells["F1"].Value = "Fecha Llegada";
+                        worksheet.Cells["G1"].Value = "Descripción Incidencia";
+
+                        worksheet.Cells["H1"].Value = "ID Item";
+                        worksheet.Cells["I1"].Value = "Ubicación";
+                        worksheet.Cells["J1"].Value = "Tipo Soporte";
+                        worksheet.Cells["K1"].Value = "Tipo Explotación";
+
+                        worksheet.Cells["L1"].Value = "ID Repuesto";
+                        worksheet.Cells["M1"].Value = "Nombre Repuesto";
+                        worksheet.Cells["N1"].Value = "Cantidad";
+                        worksheet.Cells["O1"].Value = "Descripción Repuesto";
+                        worksheet.Cells["P1"].Value = "Precio";
+                        worksheet.Cells["Q1"].Value = "Tipo Repuesto";
+
+                        int row = 2;
+                        foreach (var pedido in _pedidos)
+                        {
+                            foreach (var item in pedido.Items)
+                            {
+                                foreach (var repuesto in item.Repuestos)
+                                {
+                                    // Datos del pedido
+                                    worksheet.Cells[row, 1].Value = pedido.Id;
+                                    worksheet.Cells[row, 2].Value = pedido.FechaCreacion;
+                                    worksheet.Cells[row, 2].Style.Numberformat.Format = "dd/MM/yyyy";
+                                    worksheet.Cells[row, 3].Value = pedido.Descripcion;
+                                    worksheet.Cells[row, 4].Value = pedido.Incidencia;
+                                    worksheet.Cells[row, 5].Value = pedido.FechaIncidencia;
+                                    worksheet.Cells[row, 5].Style.Numberformat.Format = "dd/MM/yyyy";
+                                    worksheet.Cells[row, 6].Value = pedido.FechaLlegada;
+                                    worksheet.Cells[row, 6].Style.Numberformat.Format = "dd/MM/yyyy";
+                                    worksheet.Cells[row, 7].Value = pedido.DescripcionIncidencia;
+
+                                    // Datos del ítem
+                                    worksheet.Cells[row, 8].Value = item.Id;
+                                    worksheet.Cells[row, 9].Value = item.NombreUbicacion;
+                                    worksheet.Cells[row, 10].Value = item.TipoSoporte?.Nombre;
+                                    worksheet.Cells[row, 11].Value = item.TipoExplotacion?.Nombre;
+
+                                    // Datos del repuesto
+                                    worksheet.Cells[row, 12].Value = repuesto.Id;
+                                    worksheet.Cells[row, 13].Value = repuesto.Nombre;
+                                    worksheet.Cells[row, 14].Value = repuesto.Cantidad;
+                                    worksheet.Cells[row, 15].Value = repuesto.Descripcion;
+                                    worksheet.Cells[row, 16].Value = repuesto.Precio;
+                                    worksheet.Cells[row, 17].Value = repuesto.TipoRepuesto?.Nombre;
+
+                                    row++;
+                                }
+                            }
+                        }
+
+                        // Aplica formato de tabla y autoajusta las columnas
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                        package.Save();
+                    }
+                    MessageBox.Show("Datos exportados a Excel correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    // Si el usuario cancela, no deshabilitamos el botón
+                    ExportarExcelButton.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al exportar a Excel: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ExportarExcelButton.IsEnabled = true; // Habilitar el botón en caso de error
+            }
+            finally
+            {
+                // En cualquier caso, al finalizar el proceso, restablece la bandera.
+                _isExporting = false;
+            }
         }
     }
 }
