@@ -8,11 +8,11 @@
         <Style TargetType="Window">
             <Setter Property="Icon" Value="Assets/stock.ico"/>
             <!-- Fondo marrón claro global -->
-            <Setter Property="Background" Value="#D2B48C"/>
+            <Setter Property="Background" Value="#E8D999"/>
         </Style>
         <!-- Grid marrón claro global -->
         <Style TargetType="Grid">
-            <Setter Property="Background" Value="#9FF5B3"/>
+            <Setter Property="Background" Value="#E8D999"/>
         </Style>
 
 
