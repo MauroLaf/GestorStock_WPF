@@ -49,11 +49,28 @@
           Style="{StaticResource ModernDataGridStyle}" SelectionChanged="PedidosDataGrid_SelectionChanged">
 
             <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
+                <Style TargetType="{x:Type DataGridRow}">
                     <Style.Triggers>
+                        <!-- 
+                DataTrigger: Se activa cuando una propiedad de datos cumple una condición.
+                Binding: Se enlaza a la propiedad 'EstaVencido' de tu objeto Pedido.
+                Value: La condición es si 'EstaVencido' es 'True'.
+            -->
                         <DataTrigger Binding="{Binding EstaVencido}" Value="True">
-                            <Setter Property="Background" Value="Red"/>
+                            <Setter Property="Background" Value="#FFDDDD" />
+                            <!-- Fondo rojo muy claro -->
+                            <Setter Property="Foreground" Value="#990000" />
+                            <!-- Texto rojo oscuro -->
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <!-- Hace el texto un poco más fuerte -->
+                            <Setter Property="ToolTip" Value="¡ATENCIÓN! Pedido Vencido y Pendiente de Recepción." />
                         </DataTrigger>
+
+                        <!-- Estilo por defecto para filas no vencidas (opcional) -->
+                        <DataTrigger Binding="{Binding EstaVencido}" Value="False">
+                            <Setter Property="Background" Value="White" />
+                        </DataTrigger>
+
                     </Style.Triggers>
                 </Style>
             </DataGrid.RowStyle>
