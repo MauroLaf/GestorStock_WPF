@@ -29,6 +29,14 @@ namespace GestorStock.Data.Repositories
         {
             base.OnModelCreating(modelBuilder);
 
+            // CONFIGURACIÓN DE PRECISIÓN DECIMAL (11, 2)
+            // Esto se aplica correctamente a la propiedad 'Precio' en la entidad 'Repuesto', 
+            // asegurando 11 dígitos en total, con 2 decimales para la base de datos.
+            modelBuilder.Entity<Repuesto>()
+                .Property(r => r.Precio)
+                .HasColumnType("decimal(11, 2)");
+
+
             // Relaciones
             modelBuilder.Entity<Pedido>().HasMany(p => p.Items).WithOne(i => i.Pedido).HasForeignKey(i => i.PedidoId);
             modelBuilder.Entity<Item>().HasMany(i => i.Repuestos).WithOne(r => r.Item).HasForeignKey(r => r.ItemId).OnDelete(DeleteBehavior.Cascade);
