@@ -1,46 +1,56 @@
-﻿using GestorStock.Data.Repositories;
-using GestorStock.Services.Implementations;
-using GestorStock.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Windows;
-using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using System.Threading.Tasks;
+using GestorStock.Data; // Asegúrate de que el using sea GestorStock.Data
+using GestorStock.Services.Interfaces;
+using GestorStock.Services.Implementations;
 using GestorStock.Model.Entities;
 
 namespace GestorStock.API
 {
     public partial class App : Application
     {
-        private readonly ServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
+        private IConfiguration Configuration { get; } // Cambia a un get;
 
         public App()
         {
-            // Establece la licencia no comercial para EPPlus
             ExcelPackage.License.SetNonCommercialPersonal("MAURO");
 
             IServiceCollection services = new ServiceCollection();
+            // Construye la configuración aquí y la pasa al método de configuración
+            Configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
-            // Configuración de servicios y DB Context
-            services.AddDbContext<StockDbContext>();
+            services.AddSingleton(Configuration);
+
+            string connectionString = Configuration.GetConnectionString("DefaultConnection")?? throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no está configurada en appsettings.json.");
+
+            services.AddDbContext<StockDbContext>(options =>
+                options.UseMySql(connectionString, ServerVersion.Parse("8.0.21-mysql"))
+            );
+
+            // Aquí puedes agregar tus servicios y ventanas como lo tenías
             services.AddSingleton<ITipoItemService, TipoItemService>();
             services.AddSingleton<IPedidoService, PedidoService>();
-
-            // CORRECCIÓN: Se utiliza la clase de implementación 'ItemService' 
-            // en lugar de la interfaz 'IItemService' dos veces.
             services.AddSingleton<IItemService, ItemService>();
-
             services.AddSingleton<ITipoExplotacionService, TipoExplotacionService>();
             services.AddSingleton<IRepuestoService, RepuestoService>();
             services.AddSingleton<ITipoRepuestoService, TipoRepuestoService>();
+
+            // Las ventanas también se agregan aquí
             services.AddTransient<MainWindow>();
             services.AddTransient<CreatePedidoWindow>();
             services.AddTransient<AddItemWindow>();
@@ -48,19 +58,12 @@ namespace GestorStock.API
 
         protected override async void OnStartup(StartupEventArgs e)
         {
-            // Lógica para verificar pedidos vencidos y mostrar alerta al inicio
             try
             {
                 var pedidoService = _serviceProvider.GetRequiredService<IPedidoService>();
-
-                // Obtenemos todos los pedidos de forma asíncrona
                 var todosLosPedidos = await pedidoService.GetAllPedidosAsync();
-
-                // Filtramos usando la propiedad calculada 'EstaVencido' de la clase Pedido.
-                // Esta propiedad ya maneja los valores nulos (DateTime?) correctamente.
                 var pedidosVencidos = todosLosPedidos.Where(p => p.EstaVencido).ToList();
 
-                // Mostramos la alerta si hay pedidos vencidos
                 if (pedidosVencidos.Any())
                 {
                     var mensaje = $"¡ALERTA DE PEDIDOS VENCIDOS!\n\nSe han encontrado {pedidosVencidos.Count} pedido(s) cuya fecha de llegada ha pasado.";
@@ -69,18 +72,13 @@ namespace GestorStock.API
             }
             catch (Exception ex)
             {
-                // Manejo de errores de base de datos o servicios durante el arranque
                 MessageBox.Show($"Error al verificar pedidos vencidos: {ex.Message}", "Error de Base de Datos", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            // Continuamos con el arranque normal de la aplicación
             base.OnStartup(e);
-            var mainWindow = _serviceProvider.GetService<MainWindow>();
-            if (mainWindow == null)
-            {
-                MessageBox.Show("Error al iniciar la aplicación. La ventana principal no se pudo inicializar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+
+            // Usa GetRequiredService<T>() en su lugar para garantizar que el servicio exista.
+            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }
     }

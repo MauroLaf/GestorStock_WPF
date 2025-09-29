@@ -1,4 +1,4 @@
-﻿using GestorStock.Data.Repositories;
+﻿using GestorStock.Data;
 using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;

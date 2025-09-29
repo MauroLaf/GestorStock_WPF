@@ -1,13 +1,15 @@
 ﻿using GestorStock.Model.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace GestorStock.Data.Repositories
+namespace GestorStock.Data
 {
     public class StockDbContext : DbContext
     {
+        // Este constructor es el que se usa con la inyección de dependencias.
+        // Recibe las opciones de conexión (la cadena) desde App.xaml.cs.
         public StockDbContext(DbContextOptions<StockDbContext> options) : base(options) { }
-        public StockDbContext() { }
 
+        // Definición de las tablas (DbSets)
         public DbSet<Pedido> Pedidos { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<Repuesto> Repuestos { get; set; }
@@ -16,22 +18,11 @@ namespace GestorStock.Data.Repositories
         public DbSet<TipoExplotacion> TipoExplotaciones { get; set; }
         public DbSet<TipoSoporte> TiposItem { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                const string connectionString = "Server=localhost;Port=3306;Database=GestorStockDb;Uid=gestor;Pwd=12345;";
-                optionsBuilder.UseMySql(connectionString, ServerVersion.Parse("8.0.21-mysql"));
-            }
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // CONFIGURACIÓN DE PRECISIÓN DECIMAL (11, 2)
-            // Esto se aplica correctamente a la propiedad 'Precio' en la entidad 'Repuesto', 
-            // asegurando 11 dígitos en total, con 2 decimales para la base de datos.
             modelBuilder.Entity<Repuesto>()
                 .Property(r => r.Precio)
                 .HasColumnType("decimal(11, 2)");

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GestorStock.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class MigracionInicial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -158,7 +158,7 @@ namespace GestorStock.Data.Migrations
                     Cantidad = table.Column<int>(type: "int", nullable: false),
                     Descripcion = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Precio = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
+                    Precio = table.Column<decimal>(type: "decimal(11,2)", nullable: false),
                     ItemId = table.Column<int>(type: "int", nullable: false),
                     TipoRepuestoId = table.Column<int>(type: "int", nullable: true)
                 },
