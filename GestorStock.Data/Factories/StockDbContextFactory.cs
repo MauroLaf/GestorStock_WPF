@@ -9,7 +9,7 @@ namespace GestorStock.Data.Factories
         {
             var optionsBuilder = new DbContextOptionsBuilder<StockDbContext>();
 
-            var connectionString = "server=localhost;port=3306;database=GestorStockDb;user=gestor;password=12345;";
+            var connectionString = "server=192.168.10.3;port=3306;database=GestorStockDb;user=gestor;password=12345;";
 
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 
