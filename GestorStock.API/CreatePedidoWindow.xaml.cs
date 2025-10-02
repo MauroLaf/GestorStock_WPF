@@ -123,6 +123,7 @@ namespace GestorStock.API
                 {
                     itemToEdit = await _itemService.GetItemWithAllRelationsAsync(selectedItem.Id);
                 }
+
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Error al cargar el ítem para editar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);

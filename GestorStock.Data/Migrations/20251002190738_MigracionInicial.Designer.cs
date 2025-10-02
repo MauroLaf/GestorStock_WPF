@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestorStock.Data.Migrations
 {
     [DbContext(typeof(StockDbContext))]
-    [Migration("20251002114145_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251002190738_MigracionInicial")]
+    partial class MigracionInicial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
