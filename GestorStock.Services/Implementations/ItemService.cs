@@ -10,95 +10,107 @@ namespace GestorStock.Services.Implementations
 {
     public class ItemService : IItemService
     {
-        private readonly StockDbContext _context;
+        private readonly IDbContextFactory<StockDbContext> _contextFactory;
 
-        public ItemService(StockDbContext context)
+        public ItemService(IDbContextFactory<StockDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<IEnumerable<Item>> GetAllItemsAsync()
         {
-            return await _context.Items
-                                   .Include(i => i.TipoExplotacion)
-                                   .Include(i => i.TipoSoporte)
-                                   .Include(i => i.Repuestos)
-                                       .ThenInclude(r => r.TipoRepuesto)
-                                   .ToListAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return await context.Items
+                    .Include(i => i.UbicacionProducto!)
+                        .ThenInclude(up => up.Familia)
+                    .Include(i => i.TipoSoporte!)
+                    .Include(i => i.Repuestos!)
+                    .ToListAsync();
+            }
         }
 
         public async Task<Item?> GetItemByIdAsync(int id)
         {
-            return await _context.Items
-                                   .Include(i => i.TipoExplotacion)
-                                   .Include(i => i.TipoSoporte)
-                                   .Include(i => i.Repuestos)
-                                       .ThenInclude(r => r.TipoRepuesto)
-                                   .FirstOrDefaultAsync(i => i.Id == id);
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return await context.Items
+                    .Include(i => i.UbicacionProducto!)
+                        .ThenInclude(up => up.Familia)
+                    .Include(i => i.TipoSoporte!)
+                    .Include(i => i.Repuestos!)
+                    .FirstOrDefaultAsync(i => i.Id == id);
+            }
+        }
+
+        public async Task<Item?> GetItemWithAllRelationsAsync(int id)
+        {
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return await context.Items
+                    .Include(i => i.UbicacionProducto!) // <-- Línea 27 o similar
+                        .ThenInclude(up => up.Familia)
+                    .Include(i => i.TipoSoporte!) // <-- Línea 41 o similar
+                    .Include(i => i.Repuestos!) // <-- Línea 55 o similar
+                        .ThenInclude(r => r.TipoRepuesto!)
+                    .FirstOrDefaultAsync(i => i.Id == id);
+            }
         }
 
         public async Task CreateItemAsync(Item item)
         {
-            await _context.Items.AddAsync(item);
-            await _context.SaveChangesAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                context.Items.Add(item);
+                await context.SaveChangesAsync();
+            }
         }
 
         public async Task UpdateItemAsync(Item item)
         {
-            var existingItem = await _context.Items
-                                   .Include(i => i.Repuestos)
-                                   .FirstOrDefaultAsync(i => i.Id == item.Id);
-
-            if (existingItem != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                // 1. Actualiza las propiedades básicas del ítem.
-                existingItem.NombreUbicacion = item.NombreUbicacion;
-                existingItem.TipoExplotacion = item.TipoExplotacion;
-                existingItem.TipoSoporte = item.TipoSoporte;
+                var existingItem = await context.Items
+                    .Include(i => i.Repuestos!)
+                    .FirstOrDefaultAsync(i => i.Id == item.Id);
 
-                // 2. Sincroniza la colección de repuestos.
-                var incomingRepuestos = item.Repuestos.ToList();
-
-                // Identifica los repuestos a eliminar.
-                var repuestosToDelete = existingItem.Repuestos
-                    .Where(r => !incomingRepuestos.Any(inc => inc.Id == r.Id))
-                    .ToList();
-
-                // Elimina los repuestos que ya no existen.
-                _context.Repuestos.RemoveRange(repuestosToDelete);
-
-                // Recorre la lista de repuestos que vienen de la UI.
-                foreach (var incomingRepuesto in incomingRepuestos)
+                if (existingItem != null)
                 {
-                    var existingRepuesto = existingItem.Repuestos
-                        .FirstOrDefault(r => r.Id == incomingRepuesto.Id);
+                    context.Entry(existingItem).CurrentValues.SetValues(item);
 
-                    if (existingRepuesto != null)
+                    var repuestosToRemove = existingItem.Repuestos!.Where(r => !item.Repuestos!.Any(nr => nr.Id == r.Id)).ToList();
+                    foreach (var repuesto in repuestosToRemove)
                     {
-                        // Repuesto existente: actualiza sus propiedades.
-                        existingRepuesto.Nombre = incomingRepuesto.Nombre;
-                        existingRepuesto.Cantidad = incomingRepuesto.Cantidad;
-                        existingRepuesto.TipoRepuesto = incomingRepuesto.TipoRepuesto;
+                        context.Repuestos.Remove(repuesto);
                     }
-                    else
+
+                    foreach (var repuesto in item.Repuestos!)
                     {
-                        // Nuevo repuesto: agrégalo a la colección.
-                        existingItem.Repuestos.Add(incomingRepuesto);
+                        var existingRepuesto = existingItem.Repuestos.FirstOrDefault(r => r.Id == repuesto.Id);
+                        if (existingRepuesto != null)
+                        {
+                            context.Entry(existingRepuesto).CurrentValues.SetValues(repuesto);
+                        }
+                        else
+                        {
+                            existingItem.Repuestos.Add(repuesto);
+                        }
                     }
+                    await context.SaveChangesAsync();
                 }
-
-                // 3. Guarda todos los cambios en la base de datos.
-                await _context.SaveChangesAsync();
             }
         }
 
         public async Task DeleteItemAsync(int id)
         {
-            var item = await _context.Items.FindAsync(id);
-            if (item != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                _context.Items.Remove(item);
-                await _context.SaveChangesAsync();
+                var itemToDelete = await context.Items.FindAsync(id);
+                if (itemToDelete != null)
+                {
+                    context.Items.Remove(itemToDelete);
+                    await context.SaveChangesAsync();
+                }
             }
         }
     }

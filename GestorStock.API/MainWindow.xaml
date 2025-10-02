@@ -92,9 +92,9 @@
                         <TextBlock Text="Detalles del Ítem:" FontWeight="Bold" Margin="0,0,0,5"/>
                         <DataGrid ItemsSource="{Binding Items}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Tipo de Soporte" Binding="{Binding TipoSoporte.Nombre}" Width="Auto"/>
-                                <DataGridTextColumn Header="Explotación" Binding="{Binding TipoExplotacion.Nombre}" Width="Auto"/>
-                                <DataGridTextColumn Header="Nombre Ubicación" Binding="{Binding NombreUbicacion}" Width="*"/>
+                                <DataGridTextColumn Header="Ubicación/Producto" Binding="{Binding UbicacionProducto.Nombre}" Width="*"/>
+                                <DataGridTextColumn Header="Familia" Binding="{Binding UbicacionProducto.Familia.Nombre}" Width="*"/>
+                                <DataGridTextColumn Header="Tipo de Soporte" Binding="{Binding TipoSoporte.Nombre}" Width="*"/>
                             </DataGrid.Columns>
                             <DataGrid.RowDetailsTemplate>
                                 <DataTemplate>

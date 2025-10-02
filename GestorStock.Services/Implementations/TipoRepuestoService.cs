@@ -9,16 +9,19 @@ namespace GestorStock.Services.Implementations
 {
     public class TipoRepuestoService : ITipoRepuestoService
     {
-        private readonly StockDbContext _context;
+        private readonly IDbContextFactory<StockDbContext> _contextFactory;
 
-        public TipoRepuestoService(StockDbContext context)
+        public TipoRepuestoService(IDbContextFactory<StockDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<IEnumerable<TipoRepuesto>> GetAllTipoRepuestoAsync()
         {
-            return await _context.TipoRepuestos.ToListAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return await context.TipoRepuestos.ToListAsync();
+            }
         }
     }
 }

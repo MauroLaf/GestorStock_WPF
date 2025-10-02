@@ -12,6 +12,7 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Collections.Generic;
 
 namespace GestorStock.API
 {
@@ -21,16 +22,22 @@ namespace GestorStock.API
         private readonly ITipoItemService _tipoItemService;
         private readonly IPedidoService _pedidoService;
         private readonly IRepuestoService _repuestoService;
-        private readonly ITipoExplotacionService _tipoExplotacionService;
+        private readonly ITipoFamiliaService _tipoExplotacionService;
         private readonly ITipoRepuestoService _tipoRepuestoService;
         private readonly IItemService _itemService;
+        private readonly IUbicacionProductoService _ubicacionProductoService; // 1. Variable de clase añadida
 
         private ObservableCollection<Pedido> _pedidos;
-        private bool _isExporting = false; // Variable de control
+        private bool _isExporting = false;
 
-        public MainWindow(IPedidoService pedidoService, IRepuestoService repuestoService,
-            ITipoExplotacionService tipoExplotacionService, ITipoRepuestoService tipoRepuestoService,
-            ITipoItemService tipoItemService, IItemService itemService)
+        public MainWindow(
+            IPedidoService pedidoService,
+            IRepuestoService repuestoService,
+            ITipoFamiliaService tipoExplotacionService,
+            ITipoRepuestoService tipoRepuestoService,
+            ITipoItemService tipoItemService,
+            IItemService itemService,
+            IUbicacionProductoService ubicacionProductoService) // 2. Parámetro añadido al constructor
         {
             InitializeComponent();
 
@@ -40,6 +47,7 @@ namespace GestorStock.API
             _tipoRepuestoService = tipoRepuestoService;
             _tipoItemService = tipoItemService;
             _itemService = itemService;
+            _ubicacionProductoService = ubicacionProductoService; // Asigna el servicio
 
             _pedidos = new ObservableCollection<Pedido>();
             PedidosDataGrid.ItemsSource = _pedidos;
@@ -51,7 +59,6 @@ namespace GestorStock.API
             DeleteButton.Click += DeleteButton_Click;
             BuscarButton.Click += BuscarButton_Click;
             LimpiarButton.Click += LimpiarButton_Click;
-            // NOTA: No se suscribe ExportarExcelButton aquí porque ya está en XAML
             PedidosDataGrid.SelectionChanged += PedidosDataGrid_SelectionChanged;
         }
 
@@ -66,7 +73,7 @@ namespace GestorStock.API
         {
             try
             {
-                var explotaciones = await _tipoExplotacionService.GetAllTipoExplotacionAsync();
+                var explotaciones = await _tipoExplotacionService.GetAllTipoFamiliaAsync();
                 ExplotacionComboBox.ItemsSource = explotaciones;
                 ExplotacionComboBox.DisplayMemberPath = "Nombre";
                 ExplotacionComboBox.SelectedIndex = -1;
@@ -113,11 +120,11 @@ namespace GestorStock.API
         {
             await CargarTodosLosPedidosAsync();
 
-            var explotacionSeleccionada = ExplotacionComboBox.SelectedItem as TipoExplotacion;
+            var explotacionSeleccionada = ExplotacionComboBox.SelectedItem as Familia;
             var tipoItemSeleccionado = TipoSoporteComboBox.SelectedItem as TipoSoporte;
 
             var resultados = _pedidos.Where(p =>
-                (explotacionSeleccionada == null || p.Items.Any(item => item.TipoExplotacion?.Id == explotacionSeleccionada.Id)) &&
+                (explotacionSeleccionada == null || p.Items.Any(item => item.UbicacionProducto?.Familia?.Id == explotacionSeleccionada.Id)) &&
                 (tipoItemSeleccionado == null || p.Items.Any(item => item.TipoSoporte?.Id == tipoItemSeleccionado.Id))
             ).ToList();
 
@@ -141,7 +148,8 @@ namespace GestorStock.API
                 _tipoExplotacionService,
                 _tipoRepuestoService,
                 _tipoItemService,
-                _itemService);
+                _itemService,
+                _ubicacionProductoService); // 3. Se pasa el servicio IUbicacionProductoService
 
             if (createPedidoWindow.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
@@ -156,6 +164,14 @@ namespace GestorStock.API
                 return;
             }
 
+            // Cargar el pedido completo con todas sus relaciones desde la base de datos
+            var pedidoCompleto = await _pedidoService.GetPedidoByIdAsync(selectedPedido.Id);
+            if (pedidoCompleto == null)
+            {
+                MessageBox.Show("No se pudo cargar el pedido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             var editPedidoWindow = new CreatePedidoWindow(
                 _pedidoService,
                 _repuestoService,
@@ -163,10 +179,13 @@ namespace GestorStock.API
                 _tipoRepuestoService,
                 _tipoItemService,
                 _itemService,
-                selectedPedido);
+                _ubicacionProductoService,
+                pedidoCompleto);
 
             if (editPedidoWindow.ShowDialog() == true)
+            {
                 await CargarTodosLosPedidosAsync();
+            }
         }
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -236,9 +255,9 @@ namespace GestorStock.API
                         // Encabezados
                         string[] headers = new string[]
                         {
-                            "ID Pedido","Fecha Creación","Descripción Pedido","Incidencia","Fecha Incidencia","Fecha Llegada","Descripción Incidencia",
-                            "ID Item","Ubicación","Tipo Soporte","Tipo Explotación",
-                            "ID Repuesto","Nombre Repuesto","Cantidad","Descripción Repuesto","Precio","Tipo Repuesto"
+                            "ID Pedido", "Fecha Creación", "Descripción Pedido", "Incidencia", "Fecha Incidencia", "Fecha Llegada", "Descripción Incidencia",
+                            "ID Item", "Ubicación", "Tipo Soporte", "Tipo Explotación",
+                            "ID Repuesto", "Nombre Repuesto", "Cantidad", "Descripción Repuesto", "Precio", "Tipo Repuesto"
                         };
 
                         for (int i = 0; i < headers.Length; i++)
@@ -249,7 +268,7 @@ namespace GestorStock.API
                         {
                             foreach (var item in pedido.Items)
                             {
-                                foreach (var repuesto in item.Repuestos)
+                                if (item.Repuestos == null || !item.Repuestos.Any())
                                 {
                                     worksheet.Cells[row, 1].Value = pedido.Id;
                                     worksheet.Cells[row, 2].Value = pedido.FechaCreacion;
@@ -263,18 +282,41 @@ namespace GestorStock.API
                                     worksheet.Cells[row, 7].Value = pedido.DescripcionIncidencia;
 
                                     worksheet.Cells[row, 8].Value = item.Id;
-                                    worksheet.Cells[row, 9].Value = item.NombreUbicacion;
+                                    worksheet.Cells[row, 9].Value = item.UbicacionProducto?.Nombre;
                                     worksheet.Cells[row, 10].Value = item.TipoSoporte?.Nombre;
-                                    worksheet.Cells[row, 11].Value = item.TipoExplotacion?.Nombre;
-
-                                    worksheet.Cells[row, 12].Value = repuesto.Id;
-                                    worksheet.Cells[row, 13].Value = repuesto.Nombre;
-                                    worksheet.Cells[row, 14].Value = repuesto.Cantidad;
-                                    worksheet.Cells[row, 15].Value = repuesto.Descripcion;
-                                    worksheet.Cells[row, 16].Value = repuesto.Precio;
-                                    worksheet.Cells[row, 17].Value = repuesto.TipoRepuesto?.Nombre;
+                                    worksheet.Cells[row, 11].Value = item.UbicacionProducto?.Familia?.Nombre;
 
                                     row++;
+                                }
+                                else
+                                {
+                                    foreach (var repuesto in item.Repuestos)
+                                    {
+                                        worksheet.Cells[row, 1].Value = pedido.Id;
+                                        worksheet.Cells[row, 2].Value = pedido.FechaCreacion;
+                                        worksheet.Cells[row, 2].Style.Numberformat.Format = "dd/MM/yyyy";
+                                        worksheet.Cells[row, 3].Value = pedido.Descripcion;
+                                        worksheet.Cells[row, 4].Value = pedido.Incidencia;
+                                        worksheet.Cells[row, 5].Value = pedido.FechaIncidencia;
+                                        worksheet.Cells[row, 5].Style.Numberformat.Format = "dd/MM/yyyy";
+                                        worksheet.Cells[row, 6].Value = pedido.FechaLlegada;
+                                        worksheet.Cells[row, 6].Style.Numberformat.Format = "dd/MM/yyyy";
+                                        worksheet.Cells[row, 7].Value = pedido.DescripcionIncidencia;
+
+                                        worksheet.Cells[row, 8].Value = item.Id;
+                                        worksheet.Cells[row, 9].Value = item.UbicacionProducto?.Nombre;
+                                        worksheet.Cells[row, 10].Value = item.TipoSoporte?.Nombre;
+                                        worksheet.Cells[row, 11].Value = item.UbicacionProducto?.Familia?.Nombre;
+
+                                        worksheet.Cells[row, 12].Value = repuesto.Id;
+                                        worksheet.Cells[row, 13].Value = repuesto.Nombre;
+                                        worksheet.Cells[row, 14].Value = repuesto.Cantidad;
+                                        worksheet.Cells[row, 15].Value = repuesto.Descripcion;
+                                        worksheet.Cells[row, 16].Value = repuesto.Precio;
+                                        worksheet.Cells[row, 17].Value = repuesto.TipoRepuesto?.Nombre;
+
+                                        row++;
+                                    }
                                 }
                             }
                         }

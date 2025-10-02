@@ -1,33 +1,27 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace GestorStock.Model.Entities
+﻿namespace GestorStock.Model.Entities
 {
     public class Item
     {
         public int Id { get; set; }
+        public string? Nombre { get; set; }
+
+        // Relación con Pedido
         public int PedidoId { get; set; }
         public Pedido? Pedido { get; set; }
-        public string NombreUbicacion { get; set; } = string.Empty;
-        public int TipoItemId { get; set; }
+
+        // Relación con Familia (lo llamaste TipoFamilia, pero es la misma clase)
+        public int? FamiliaId { get; set; }
+        public Familia? Familia { get; set; }
+
+        // Relación con UbicacionProducto
+        public int? UbicacionProductoId { get; set; }
+        public UbicacionProducto? UbicacionProducto { get; set; }
+
+        // Relación con TipoSoporte
+        public int? TipoSoporteId { get; set; }
         public TipoSoporte? TipoSoporte { get; set; }
-        public int TipoExplotacionId { get; set; }
-        public TipoExplotacion? TipoExplotacion { get; set; }
 
+        // Relación con Repuestos
         public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
-
-        public string RepuestosFormateados
-        {
-            get
-            {
-                if (Repuestos == null || !Repuestos.Any())
-                {
-                    return "Sin repuestos";
-                }
-
-                var repuestosStrings = Repuestos.Select(r => $"{r.Nombre} ({r.Cantidad}) - {r.TipoRepuesto?.Nombre}");
-                return string.Join(", ", repuestosStrings);
-            }
-        }
     }
 }

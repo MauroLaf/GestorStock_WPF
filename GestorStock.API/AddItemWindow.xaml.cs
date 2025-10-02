@@ -1,73 +1,112 @@
 ﻿using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Windows;
-using System.Windows.Input;
-using System.Runtime.Versioning;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace GestorStock.API
 {
     [SupportedOSPlatform("windows")]
     public partial class AddItemWindow : Window
     {
-        private readonly ITipoExplotacionService _tipoExplotacionService;
-        private readonly IRepuestoService _repuestoService;
+        private readonly ITipoFamiliaService _tipoFamiliaService;
         private readonly ITipoRepuestoService _tipoRepuestoService;
         private readonly ITipoItemService _tipoItemService;
+        private readonly IUbicacionProductoService _ubicacionProductoService;
 
-        public ObservableCollection<Repuesto> _repuestos;
+        public ObservableCollection<Repuesto> Repuestos { get; private set; }
         public Item ItemResult { get; private set; }
-        private Repuesto? _repuestoToEdit; // Variable de control para el repuesto a editar
+        private Repuesto? _repuestoToEdit;
+        private bool _isEditingItem = false;
 
         public AddItemWindow(
-            ITipoExplotacionService tipoExplotacionService,
+            ITipoFamiliaService tipoFamiliaService,
             IRepuestoService repuestoService,
             ITipoRepuestoService tipoRepuestoService,
             ITipoItemService tipoItemService,
+            IUbicacionProductoService ubicacionProductoService,
             Item? itemToEdit = null)
         {
             InitializeComponent();
-            _tipoExplotacionService = tipoExplotacionService;
-            _repuestoService = repuestoService;
+            _tipoFamiliaService = tipoFamiliaService;
             _tipoRepuestoService = tipoRepuestoService;
             _tipoItemService = tipoItemService;
+            _ubicacionProductoService = ubicacionProductoService;
 
+            _isEditingItem = itemToEdit != null;
             ItemResult = itemToEdit ?? new Item();
-            this.Title = itemToEdit != null ? "Editar Ítem" : "Agregar Ítem";
 
-            _repuestos = new ObservableCollection<Repuesto>(ItemResult.Repuestos ?? new List<Repuesto>());
-            RepuestosDataGrid.ItemsSource = _repuestos;
+            this.DataContext = ItemResult;
+
+            this.Title = _isEditingItem ? "Editar Ítem" : "Agregar Ítem";
+
+            Repuestos = new ObservableCollection<Repuesto>(ItemResult.Repuestos ?? new List<Repuesto>());
+            RepuestosDataGrid.ItemsSource = Repuestos;
 
             this.Loaded += AddItemWindow_Loaded;
+            AddUbicacionProductoButton.Click += AddUbicacionProductoButton_Click;
             AddRepuestoButton.Click += AddRepuestoButton_Click;
             EditRepuestoButton.Click += EditRepuestoButton_Click;
-            // Suscribe el nuevo botón al evento
             UpdateRepuestoButton.Click += UpdateRepuestoButton_Click;
             DeleteRepuestoButton.Click += DeleteRepuestoButton_Click;
             AceptarButton.Click += AceptarButton_Click;
             CancelarButton.Click += CancelarButton_Click;
             CantidadTextBox.PreviewTextInput += CantidadTextBox_PreviewTextInput;
-            if (PrecioTextBox != null)
-            {
-                PrecioTextBox.PreviewTextInput += PrecioTextBox_PreviewTextInput;
-            }
+            PrecioTextBox.PreviewTextInput += PrecioTextBox_PreviewTextInput;
+            TipoFamiliaComboBox.SelectionChanged += TipoFamiliaComboBox_SelectionChanged;
         }
 
         private async void AddItemWindow_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                TipoExplotacionComboBox.ItemsSource = await _tipoExplotacionService.GetAllTipoExplotacionAsync();
+                // Cargar todas las listas de opciones
+                TipoFamiliaComboBox.ItemsSource = await _tipoFamiliaService.GetAllTipoFamiliaAsync();
                 TipoSoporteComboBox.ItemsSource = await _tipoItemService.GetAllTipoItemAsync();
                 TipoRepuestoComboBox.ItemsSource = await _tipoRepuestoService.GetAllTipoRepuestoAsync();
 
-                if (ItemResult.Id != 0 || !string.IsNullOrEmpty(ItemResult.NombreUbicacion))
+                if (_isEditingItem && ItemResult != null)
                 {
-                    LoadItemData();
+                    // PRIMERO: Seleccionar la familia para que se carguen las ubicaciones correctas
+                    if (ItemResult.FamiliaId.HasValue)
+                    {
+                        var familia = (TipoFamiliaComboBox.ItemsSource as IEnumerable<Familia>)?
+                                      .FirstOrDefault(f => f.Id == ItemResult.FamiliaId.Value);
+
+                        if (familia != null)
+                        {
+                            // Desactivar temporalmente el evento para evitar que se limpie la selección
+                            TipoFamiliaComboBox.SelectionChanged -= TipoFamiliaComboBox_SelectionChanged;
+                            TipoFamiliaComboBox.SelectedItem = familia;
+                            TipoFamiliaComboBox.SelectionChanged += TipoFamiliaComboBox_SelectionChanged;
+
+                            // Cargar ubicaciones de esta familia
+                            await LoadUbicacionProductosByFamilia();
+                        }
+                    }
+
+                    // SEGUNDO: Ahora seleccionar la ubicación (después de que se hayan cargado)
+                    if (ItemResult.UbicacionProductoId.HasValue)
+                    {
+                        var ubicacion = (UbicacionProductoComboBox.ItemsSource as IEnumerable<UbicacionProducto>)?
+                                        .FirstOrDefault(up => up.Id == ItemResult.UbicacionProductoId.Value);
+                        UbicacionProductoComboBox.SelectedItem = ubicacion;
+                    }
+
+                    // TERCERO: Seleccionar el tipo de soporte
+                    if (ItemResult.TipoSoporteId.HasValue)
+                    {
+                        var tipoSoporte = (TipoSoporteComboBox.ItemsSource as IEnumerable<TipoSoporte>)?
+                                          .FirstOrDefault(s => s.Id == ItemResult.TipoSoporteId.Value);
+                        TipoSoporteComboBox.SelectedItem = tipoSoporte;
+                    }
                 }
             }
             catch (Exception ex)
@@ -78,67 +117,98 @@ namespace GestorStock.API
             }
         }
 
-        private void LoadItemData()
+        private async void TipoFamiliaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            NombreUbicacionTextBox.Text = ItemResult.NombreUbicacion;
+            await LoadUbicacionProductosByFamilia();
 
-            if (ItemResult.TipoExplotacionId != 0)
+            // Solo limpiar si NO estamos en modo edición o si ya terminó de cargar
+            if (!_isEditingItem || UbicacionProductoComboBox.ItemsSource != null)
             {
-                TipoExplotacionComboBox.SelectedItem = (TipoExplotacionComboBox.ItemsSource as IEnumerable<TipoExplotacion>)?.FirstOrDefault(t => t.Id == ItemResult.TipoExplotacionId);
+                UbicacionProductoComboBox.SelectedItem = null;
+                ItemResult.UbicacionProducto = null;
+                ItemResult.UbicacionProductoId = null;
+            }
+        }
+
+        private async Task LoadUbicacionProductosByFamilia()
+        {
+            var selectedFamilia = TipoFamiliaComboBox.SelectedItem as Familia;
+            if (selectedFamilia != null)
+            {
+                UbicacionProductoComboBox.ItemsSource = await _ubicacionProductoService.GetUbicacionProductosByFamiliaIdAsync(selectedFamilia.Id);
+            }
+            else
+            {
+                UbicacionProductoComboBox.ItemsSource = null;
+            }
+        }
+
+        private async void AddUbicacionProductoButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedFamilia = TipoFamiliaComboBox.SelectedItem as Familia;
+            if (selectedFamilia == null)
+            {
+                MessageBox.Show("Por favor, selecciona primero una familia de ubicación.", "Selección requerida", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
 
-            if (ItemResult.TipoItemId != 0)
-            {
-                TipoSoporteComboBox.SelectedItem = (TipoSoporteComboBox.ItemsSource as IEnumerable<TipoSoporte>)?.FirstOrDefault(t => t.Id == ItemResult.TipoItemId);
-            }
+            var newLocationName = Microsoft.VisualBasic.Interaction.InputBox(
+                "Ingresa el nombre de la nueva ubicación:",
+                "Agregar Ubicación",
+                "");
 
-            _repuestos.Clear();
-            if (ItemResult.Repuestos != null)
+            if (!string.IsNullOrWhiteSpace(newLocationName))
             {
-                foreach (var repuesto in ItemResult.Repuestos)
+                try
                 {
-                    _repuestos.Add(repuesto);
+                    var newUbicacion = new UbicacionProducto
+                    {
+                        Nombre = newLocationName,
+                        FamiliaId = selectedFamilia.Id,
+                        Familia = selectedFamilia
+                    };
+
+                    await _ubicacionProductoService.CreateUbicacionProductoAsync(newUbicacion);
+                    await LoadUbicacionProductosByFamilia();
+                    UbicacionProductoComboBox.SelectedItem = newUbicacion;
+
+                    MessageBox.Show("Ubicación añadida correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al agregar la ubicación: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
 
+        private void AceptarButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Actualizar el ItemResult con los valores de los ComboBoxes seleccionados
+            ItemResult.Familia = TipoFamiliaComboBox.SelectedItem as Familia;
+            ItemResult.FamiliaId = ItemResult.Familia?.Id;
+
+            ItemResult.UbicacionProducto = UbicacionProductoComboBox.SelectedItem as UbicacionProducto;
+            ItemResult.UbicacionProductoId = ItemResult.UbicacionProducto?.Id;
+
+            ItemResult.TipoSoporte = TipoSoporteComboBox.SelectedItem as TipoSoporte;
+            ItemResult.TipoSoporteId = ItemResult.TipoSoporte?.Id;
+
+            ItemResult.Repuestos = Repuestos.ToList();
+
+            this.DialogResult = true;
+            this.Close();
+        }
+
+        private void CancelarButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.DialogResult = false;
+        }
+
         private void AddRepuestoButton_Click(object sender, RoutedEventArgs e)
         {
-            int cantidad = 0;
-            TipoRepuesto? selectedTipoRepuesto = null;
-            decimal precio = 0;
+            if (!ValidateRepuestoInputs(out int cantidad, out decimal precio, out TipoRepuesto? selectedTipoRepuesto)) return;
 
-            if (string.IsNullOrWhiteSpace(RepuestoTextBox.Text) || string.IsNullOrWhiteSpace(CantidadTextBox.Text))
-            {
-                MessageBox.Show("Debe ingresar un nombre para el repuesto y la cantidad.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (!int.TryParse(CantidadTextBox.Text, out cantidad) || cantidad <= 0)
-            {
-                MessageBox.Show("La cantidad debe ser un número entero positivo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(PrecioTextBox.Text))
-            {
-                MessageBox.Show("Debe ingresar el precio del repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            if (!decimal.TryParse(PrecioTextBox.Text, out precio) || precio < 0)
-            {
-                MessageBox.Show("El precio debe ser un número válido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            selectedTipoRepuesto = TipoRepuestoComboBox.SelectedItem as TipoRepuesto;
-            if (selectedTipoRepuesto == null)
-            {
-                MessageBox.Show("Debe seleccionar un tipo de repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var existingRepuesto = _repuestos.FirstOrDefault(r => r.Nombre.Equals(RepuestoTextBox.Text, StringComparison.OrdinalIgnoreCase));
+            var existingRepuesto = Repuestos.FirstOrDefault(r => r.Nombre.Equals(RepuestoTextBox.Text, StringComparison.OrdinalIgnoreCase));
             if (existingRepuesto != null)
             {
                 MessageBox.Show("Ya existe un repuesto con ese nombre. Use la función de 'Editar' para modificarlo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -151,11 +221,10 @@ namespace GestorStock.API
                 Cantidad = cantidad,
                 Precio = precio,
                 TipoRepuesto = selectedTipoRepuesto,
-                TipoRepuestoId = selectedTipoRepuesto.Id
+                TipoRepuestoId = selectedTipoRepuesto?.Id
             };
-            _repuestos.Add(newRepuesto);
+            Repuestos.Add(newRepuesto);
 
-            RepuestosDataGrid.Items.Refresh();
             LimpiarCamposRepuesto();
         }
 
@@ -167,29 +236,17 @@ namespace GestorStock.API
                 MessageBox.Show("Por favor, selecciona un repuesto para editar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
             _repuestoToEdit = selectedRepuesto;
-
-            // Se cargan los valores del repuesto seleccionado a los campos de texto y combobox.
             RepuestoTextBox.Text = selectedRepuesto.Nombre;
             CantidadTextBox.Text = selectedRepuesto.Cantidad.ToString();
             PrecioTextBox.Text = selectedRepuesto.Precio.ToString();
 
-            if (selectedRepuesto.TipoRepuestoId.HasValue)
-            {
-                TipoRepuestoComboBox.SelectedItem = (TipoRepuestoComboBox.ItemsSource as IEnumerable<TipoRepuesto>)?.FirstOrDefault(t => t.Id == selectedRepuesto.TipoRepuestoId.Value);
-            }
-            else
-            {
-                TipoRepuestoComboBox.SelectedItem = null;
-            }
+            TipoRepuestoComboBox.SelectedItem = (TipoRepuestoComboBox.ItemsSource as IEnumerable<TipoRepuesto>)?.FirstOrDefault(t => t.Id == selectedRepuesto.TipoRepuestoId);
 
-            // Oculta el botón de "Agregar" y muestra el de "Actualizar".
             AddRepuestoButton.Visibility = Visibility.Collapsed;
             UpdateRepuestoButton.Visibility = Visibility.Visible;
         }
 
-        // Nuevo método para actualizar los cambios
         private void UpdateRepuestoButton_Click(object sender, RoutedEventArgs e)
         {
             if (_repuestoToEdit == null)
@@ -197,54 +254,18 @@ namespace GestorStock.API
                 MessageBox.Show("No se ha seleccionado ningún repuesto para actualizar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            int cantidad = 0;
-            decimal precio = 0;
-
-            if (string.IsNullOrWhiteSpace(RepuestoTextBox.Text) || string.IsNullOrWhiteSpace(CantidadTextBox.Text))
-            {
-                MessageBox.Show("Debe ingresar un nombre para el repuesto y la cantidad.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (!int.TryParse(CantidadTextBox.Text, out cantidad) || cantidad <= 0)
-            {
-                MessageBox.Show("La cantidad debe ser un número entero positivo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(PrecioTextBox.Text))
-            {
-                MessageBox.Show("Debe ingresar el precio del repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            if (!decimal.TryParse(PrecioTextBox.Text, out precio) || precio < 0)
-            {
-                MessageBox.Show("El precio debe ser un número válido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            TipoRepuesto? selectedTipoRepuesto = TipoRepuestoComboBox.SelectedItem as TipoRepuesto;
-            if (selectedTipoRepuesto == null)
-            {
-                MessageBox.Show("Debe seleccionar un tipo de repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+            if (!ValidateRepuestoInputs(out int cantidad, out decimal precio, out TipoRepuesto? selectedTipoRepuesto)) return;
 
             _repuestoToEdit.Nombre = RepuestoTextBox.Text;
             _repuestoToEdit.Cantidad = cantidad;
             _repuestoToEdit.Precio = precio;
             _repuestoToEdit.TipoRepuesto = selectedTipoRepuesto;
-            _repuestoToEdit.TipoRepuestoId = selectedTipoRepuesto.Id;
+            _repuestoToEdit.TipoRepuestoId = selectedTipoRepuesto?.Id;
 
-            // Refresca la vista del DataGrid
             RepuestosDataGrid.Items.Refresh();
-
-            // Oculta el botón de "Actualizar" y muestra el de "Agregar".
             AddRepuestoButton.Visibility = Visibility.Visible;
             UpdateRepuestoButton.Visibility = Visibility.Collapsed;
             _repuestoToEdit = null;
-
             LimpiarCamposRepuesto();
         }
 
@@ -256,31 +277,37 @@ namespace GestorStock.API
                 MessageBox.Show("Por favor, selecciona un repuesto para eliminar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            _repuestos.Remove(selectedRepuesto);
+            Repuestos.Remove(selectedRepuesto);
         }
 
-        private void AceptarButton_Click(object sender, RoutedEventArgs e)
+        private bool ValidateRepuestoInputs(out int cantidad, out decimal precio, out TipoRepuesto? selectedTipoRepuesto)
         {
-            // Valida si hay datos en los campos de ítem.
-            if (string.IsNullOrEmpty(NombreUbicacionTextBox.Text) || TipoExplotacionComboBox.SelectedItem == null || TipoSoporteComboBox.SelectedItem == null)
+            cantidad = 0;
+            precio = 0;
+            selectedTipoRepuesto = null;
+
+            if (string.IsNullOrWhiteSpace(RepuestoTextBox.Text))
             {
-                MessageBox.Show("Debe completar todos los campos del ítem para poder continuar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                MessageBox.Show("Debe ingresar un nombre para el repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
-
-            ItemResult.NombreUbicacion = NombreUbicacionTextBox.Text;
-            ItemResult.TipoExplotacion = TipoExplotacionComboBox.SelectedItem as TipoExplotacion;
-            ItemResult.TipoExplotacionId = ItemResult.TipoExplotacion?.Id ?? 0;
-            ItemResult.TipoSoporte = TipoSoporteComboBox.SelectedItem as TipoSoporte;
-            ItemResult.TipoItemId = ItemResult.TipoSoporte?.Id ?? 0;
-            ItemResult.Repuestos = _repuestos.ToList();
-
-            this.DialogResult = true;
-        }
-
-        private void CancelarButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
+            if (string.IsNullOrWhiteSpace(CantidadTextBox.Text) || !int.TryParse(CantidadTextBox.Text, out cantidad) || cantidad <= 0)
+            {
+                MessageBox.Show("La cantidad debe ser un número entero positivo.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(PrecioTextBox.Text) || !decimal.TryParse(PrecioTextBox.Text, out precio) || precio < 0)
+            {
+                MessageBox.Show("El precio debe ser un número válido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            selectedTipoRepuesto = TipoRepuestoComboBox.SelectedItem as TipoRepuesto;
+            if (selectedTipoRepuesto == null)
+            {
+                MessageBox.Show("Debe seleccionar un tipo de repuesto.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            return true;
         }
 
         private void CantidadTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)

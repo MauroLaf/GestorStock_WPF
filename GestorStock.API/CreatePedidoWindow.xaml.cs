@@ -1,12 +1,10 @@
 ﻿using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Runtime.Versioning;
-using System;
-using System.Threading.Tasks;
-using System.Windows.Controls;
 using System.Collections.Generic;
 
 namespace GestorStock.API
@@ -16,10 +14,11 @@ namespace GestorStock.API
     {
         private readonly IPedidoService _pedidoService;
         private readonly IItemService _itemService;
-        private readonly ITipoExplotacionService _tipoExplotacionService;
+        private readonly ITipoFamiliaService _tipoFamiliaService;
         private readonly IRepuestoService _repuestoService;
         private readonly ITipoRepuestoService _tipoRepuestoService;
         private readonly ITipoItemService _tipoItemService;
+        private readonly IUbicacionProductoService _ubicacionProductoService;
 
         private ObservableCollection<Item> _items;
         public Pedido PedidoResult { get; private set; }
@@ -27,19 +26,21 @@ namespace GestorStock.API
         public CreatePedidoWindow(
             IPedidoService pedidoService,
             IRepuestoService repuestoService,
-            ITipoExplotacionService tipoExplotacionService,
+            ITipoFamiliaService tipoFamiliaService,
             ITipoRepuestoService tipoRepuestoService,
             ITipoItemService tipoItemService,
             IItemService itemService,
+            IUbicacionProductoService ubicacionProductoService,
             Pedido? pedidoToEdit = null)
         {
             InitializeComponent();
             _pedidoService = pedidoService;
             _itemService = itemService;
-            _tipoExplotacionService = tipoExplotacionService;
+            _tipoFamiliaService = tipoFamiliaService;
             _repuestoService = repuestoService;
             _tipoRepuestoService = tipoRepuestoService;
             _tipoItemService = tipoItemService;
+            _ubicacionProductoService = ubicacionProductoService;
 
             _items = new ObservableCollection<Item>();
             ItemsDataGrid.ItemsSource = _items;
@@ -70,10 +71,8 @@ namespace GestorStock.API
             if (PedidoResult == null) return;
             DescripcionTextBox.Text = PedidoResult.Descripcion;
             IncidenciaCheckBox.IsChecked = PedidoResult.Incidencia;
-
             IncidenciaDatePicker.SelectedDate = PedidoResult.FechaIncidencia;
             FechaLlegadaDatePicker.SelectedDate = PedidoResult.FechaLlegada;
-
             DescripcionIncidenciaTextBox.Text = PedidoResult.DescripcionIncidencia;
 
             if (PedidoResult.Items != null)
@@ -89,10 +88,11 @@ namespace GestorStock.API
         private void AddItemButton_Click(object sender, RoutedEventArgs e)
         {
             var addItemWindow = new AddItemWindow(
-                _tipoExplotacionService,
+                _tipoFamiliaService,
                 _repuestoService,
                 _tipoRepuestoService,
-                _tipoItemService);
+                _tipoItemService,
+                _ubicacionProductoService);
 
             if (addItemWindow.ShowDialog() == true)
             {
@@ -100,7 +100,7 @@ namespace GestorStock.API
             }
         }
 
-        private void EditItemButton_Click(object sender, RoutedEventArgs e)
+        private async void EditItemButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedItem = ItemsDataGrid.SelectedItem as Item;
             if (selectedItem == null)
@@ -109,16 +109,51 @@ namespace GestorStock.API
                 return;
             }
 
+            Item? itemToEdit;
+
+            // Si el ítem no tiene ID (es nuevo, no guardado en BD), usa el objeto directamente
+            if (selectedItem.Id == 0)
+            {
+                itemToEdit = selectedItem;
+            }
+            else
+            {
+                // Si tiene ID, cárgalo desde la base de datos con todas sus relaciones
+                try
+                {
+                    itemToEdit = await _itemService.GetItemWithAllRelationsAsync(selectedItem.Id);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al cargar el ítem para editar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            if (itemToEdit == null)
+            {
+                MessageBox.Show("No se pudo cargar el ítem para editar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             var editItemWindow = new AddItemWindow(
-                _tipoExplotacionService,
+                _tipoFamiliaService,
                 _repuestoService,
                 _tipoRepuestoService,
                 _tipoItemService,
-                selectedItem);
+                _ubicacionProductoService,
+                itemToEdit);
 
             if (editItemWindow.ShowDialog() == true)
             {
-                ItemsDataGrid.Items.Refresh();
+                var index = _items.IndexOf(selectedItem);
+                if (index != -1)
+                {
+                    // Usar RemoveAt e Insert en lugar de asignación directa
+                    // para que ObservableCollection notifique el cambio correctamente
+                    _items.RemoveAt(index);
+                    _items.Insert(index, editItemWindow.ItemResult);
+                }
             }
         }
 
@@ -138,10 +173,8 @@ namespace GestorStock.API
         {
             PedidoResult.Descripcion = DescripcionTextBox.Text;
             PedidoResult.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
-
             PedidoResult.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
             PedidoResult.FechaLlegada = FechaLlegadaDatePicker.SelectedDate;
-
             PedidoResult.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
             PedidoResult.Items = _items.ToList();
 

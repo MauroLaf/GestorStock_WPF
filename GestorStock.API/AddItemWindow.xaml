@@ -14,37 +14,56 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <TextBlock Text="Tipo de Explotación:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="TipoExplotacionComboBox" Grid.Row="0" Grid.Column="1" Margin="0,5" DisplayMemberPath="Nombre"/>
+        <TextBlock Text="Nombre de Producto:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="NombreProductoTextBox" Grid.Row="0" Grid.Column="1" Margin="0,5" Text="{Binding Nombre, Mode=TwoWay}"/>
 
-        <TextBlock Text="Tipo de Soporte:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="TipoSoporteComboBox" Grid.Row="1" Grid.Column="1" Margin="0,5" DisplayMemberPath="Nombre"/>
+        <TextBlock Text="Familia de Ubicación:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="TipoFamiliaComboBox"
+          Grid.Row="1" Grid.Column="1" Margin="0,5"
+          DisplayMemberPath="Nombre"
+          SelectedItem="{Binding Familia, Mode=TwoWay}"/>
 
-        <TextBlock Text="Nombre Ubicación:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="NombreUbicacionTextBox" Grid.Row="2" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Text="Ubicación/Producto:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="UbicacionProductoComboBox"
+          Grid.Row="2" Grid.Column="1" Margin="0,5"
+          DisplayMemberPath="Nombre"
+          SelectedItem="{Binding UbicacionProducto, Mode=TwoWay}"/>
 
-        <TextBlock Text="Tipo de Repuesto:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="TipoRepuestoComboBox" Grid.Row="3" Grid.Column="1" Margin="0,5" DisplayMemberPath="Nombre"/>
+        <Button x:Name="AddUbicacionProductoButton" Content="+" Grid.Row="2" Grid.Column="2" Margin="5" VerticalAlignment="Center" Width="30" Height="25"/>
 
-        <TextBlock Text="Repuesto:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="RepuestoTextBox" Grid.Row="4" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Text="Tipo de Soporte:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="TipoSoporteComboBox"
+          Grid.Row="3" Grid.Column="1" Margin="0,5"
+          DisplayMemberPath="Nombre"
+          SelectedItem="{Binding TipoSoporte, Mode=TwoWay}"/>
 
-        <TextBlock Text="Precio (€):" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="PrecioTextBox" Grid.Row="5" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Text="Tipo de Repuesto:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="TipoRepuestoComboBox"
+          Grid.Row="4" Grid.Column="1" Margin="0,5"
+          DisplayMemberPath="Nombre"/>
 
-        <TextBlock Text="Cantidad:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="CantidadTextBox" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
+        <TextBlock Text="Repuesto:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="RepuestoTextBox" Grid.Row="5" Grid.Column="1" Margin="0,5"/>
 
-        <DataGrid x:Name="RepuestosDataGrid" Grid.Row="7" Grid.ColumnSpan="2" AutoGenerateColumns="False" Margin="0,10,0,0" IsReadOnly="True">
+        <TextBlock Text="Precio (€):" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="PrecioTextBox" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
+
+        <TextBlock Text="Cantidad:" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="CantidadTextBox" Grid.Row="7" Grid.Column="1" Margin="0,5"/>
+
+        <DataGrid x:Name="RepuestosDataGrid" Grid.Row="8" Grid.ColumnSpan="3" AutoGenerateColumns="False" Margin="0,10,0,0" IsReadOnly="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
                 <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="Auto"/>
@@ -52,7 +71,7 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <Grid Grid.Row="8" Grid.ColumnSpan="2" HorizontalAlignment="Center">
+        <Grid Grid.Row="9" Grid.ColumnSpan="3" HorizontalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -65,7 +84,7 @@
             <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Grid.Column="3" Margin="5"/>
         </Grid>
 
-        <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+        <StackPanel Grid.Row="10" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button x:Name="AceptarButton" Content="Aceptar" Width="120" Margin="5"/>
             <Button x:Name="CancelarButton" Content="Cancelar" Width="120" Margin="5"/>
         </StackPanel>

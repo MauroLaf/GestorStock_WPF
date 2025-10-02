@@ -62,7 +62,8 @@ namespace GestorStock.Model.Entities
         }
 
         // Propiedades de navegación para la relación con Item
-        public int ItemId { get; set; }
+        // ¡CAMBIO CLAVE AQUÍ! Hacemos ItemId anulable
+        public int? ItemId { get; set; }
         public Item? Item { get; set; }
 
         // Propiedades para la relación con TipoRepuesto

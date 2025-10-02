@@ -1,15 +1,16 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using GestorStock.Data; // Asegúrate de que el using sea GestorStock.Data
+using GestorStock.Model.Entities;
+using GestorStock.Services;
+using GestorStock.Services.Implementations;
+using GestorStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using OfficeOpenXml;
 using System;
 using System.Linq;
-using System.Windows;
-using OfficeOpenXml;
 using System.Threading.Tasks;
-using GestorStock.Data; // Asegúrate de que el using sea GestorStock.Data
-using GestorStock.Services.Interfaces;
-using GestorStock.Services.Implementations;
-using GestorStock.Model.Entities;
+using System.Windows;
 
 namespace GestorStock.API
 {
@@ -38,17 +39,17 @@ namespace GestorStock.API
 
             string connectionString = Configuration.GetConnectionString("DefaultConnection")?? throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no está configurada en appsettings.json.");
 
-            services.AddDbContext<StockDbContext>(options =>
-                options.UseMySql(connectionString, ServerVersion.Parse("8.0.21-mysql"))
-            );
+            services.AddDbContextFactory<StockDbContext>(options =>options.UseMySql(connectionString, ServerVersion.Parse("8.0.21-mysql"))
+        );
 
             // Aquí puedes agregar tus servicios y ventanas como lo tenías
             services.AddSingleton<ITipoItemService, TipoItemService>();
             services.AddSingleton<IPedidoService, PedidoService>();
             services.AddSingleton<IItemService, ItemService>();
-            services.AddSingleton<ITipoExplotacionService, TipoExplotacionService>();
+            services.AddSingleton<ITipoFamiliaService, TipoFamiliaService>();
             services.AddSingleton<IRepuestoService, RepuestoService>();
             services.AddSingleton<ITipoRepuestoService, TipoRepuestoService>();
+            services.AddTransient<IUbicacionProductoService, UbicacionProductoService>();
 
             // Las ventanas también se agregan aquí
             services.AddTransient<MainWindow>();

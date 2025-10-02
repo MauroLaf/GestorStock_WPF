@@ -8,57 +8,57 @@ using System.Threading.Tasks;
 
 namespace GestorStock.Services.Implementations
 {
-    public class TipoItemService : ITipoItemService
+    public class TipoFamiliaService : ITipoFamiliaService
     {
         private readonly IDbContextFactory<StockDbContext> _contextFactory;
 
-        public TipoItemService(IDbContextFactory<StockDbContext> contextFactory)
+        public TipoFamiliaService(IDbContextFactory<StockDbContext> contextFactory)
         {
             _contextFactory = contextFactory;
         }
 
-        public async Task<List<TipoSoporte>> GetAllTipoItemAsync()
+        public async Task<List<Familia>> GetAllTipoFamiliaAsync()
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                return await context.TiposSoporte.ToListAsync();
+                return await context.Familias.ToListAsync();
             }
         }
 
-        public async Task<TipoSoporte?> GetTipoSoporteById(int id)
+        public async Task<Familia?> GetTipoFamiliaByIdAsync(int id)
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                return await context.TiposSoporte.FirstOrDefaultAsync(t => t.Id == id);
+                return await context.Familias.FirstOrDefaultAsync(t => t.Id == id);
             }
         }
 
-        public async Task AddTipoSoporte(TipoSoporte tipoSoporte)
+        public async Task CreateTipoFamiliaAsync(Familia tipo)
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                await context.TiposSoporte.AddAsync(tipoSoporte);
+                await context.Familias.AddAsync(tipo);
                 await context.SaveChangesAsync();
             }
         }
 
-        public async Task UpdateTipoSoporte(TipoSoporte tipoSoporte)
+        public async Task UpdateTipoFamiliaAsync(Familia tipo)
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                context.Entry(tipoSoporte).State = EntityState.Modified;
+                context.Entry(tipo).State = EntityState.Modified;
                 await context.SaveChangesAsync();
             }
         }
 
-        public async Task DeleteTipoSoporte(int id)
+        public async Task DeleteTipoFamiliaAsync(int id)
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                var tipoSoporte = await context.TiposSoporte.FindAsync(id);
-                if (tipoSoporte != null)
+                var tipo = await context.Familias.FindAsync(id);
+                if (tipo != null)
                 {
-                    context.TiposSoporte.Remove(tipoSoporte);
+                    context.Familias.Remove(tipo);
                     await context.SaveChangesAsync();
                 }
             }

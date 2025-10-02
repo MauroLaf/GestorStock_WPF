@@ -61,8 +61,8 @@
 
         <DataGrid x:Name="ItemsDataGrid" Grid.Row="2" Grid.ColumnSpan="2" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,0,0,10">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Nombre Ubicación" Binding="{Binding NombreUbicacion}" Width="*"/>
-                <DataGridTextColumn Header="Tipo Explotación" Binding="{Binding TipoExplotacion.Nombre}" Width="*"/>
+                <DataGridTextColumn Header="Ubicación/Producto" Binding="{Binding UbicacionProducto.Nombre}" Width="*"/>
+                <DataGridTextColumn Header="Familia" Binding="{Binding UbicacionProducto.Familia.Nombre}" Width="*"/>
                 <DataGridTextColumn Header="Tipo Soporte" Binding="{Binding TipoSoporte.Nombre}" Width="*"/>
                 <DataGridTextColumn Header="Total (€)" Binding="{Binding Path=Repuestos, Converter={StaticResource RepuestosTotalConverter}, StringFormat=C}" Width="Auto"/>
             </DataGrid.Columns>
