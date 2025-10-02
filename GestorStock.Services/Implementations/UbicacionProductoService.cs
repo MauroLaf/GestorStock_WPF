@@ -44,5 +44,17 @@ namespace GestorStock.Services.Implementations
                 return ubicacionProducto;
             }
         }
+        public async Task DeleteUbicacionProductoAsync(int id)
+        {
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var ubicacionToDelete = await context.UbicacionProductos.FindAsync(id);
+                if (ubicacionToDelete != null)
+                {
+                    context.UbicacionProductos.Remove(ubicacionToDelete);
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
     }
 }

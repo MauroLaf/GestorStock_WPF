@@ -52,6 +52,10 @@ namespace GestorStock.API
 
             this.Loaded += AddItemWindow_Loaded;
             AddUbicacionProductoButton.Click += AddUbicacionProductoButton_Click;
+
+            // ⭐ Conexión del botón de Quitar Ubicación (Signo -) ⭐
+            RemoveUbicacionProductoButton.Click += RemoveUbicacionProductoButton_Click;
+
             AddRepuestoButton.Click += AddRepuestoButton_Click;
             EditRepuestoButton.Click += EditRepuestoButton_Click;
             UpdateRepuestoButton.Click += UpdateRepuestoButton_Click;
@@ -78,7 +82,7 @@ namespace GestorStock.API
                     if (ItemResult.FamiliaId.HasValue)
                     {
                         var familia = (TipoFamiliaComboBox.ItemsSource as IEnumerable<Familia>)?
-                                      .FirstOrDefault(f => f.Id == ItemResult.FamiliaId.Value);
+                                             .FirstOrDefault(f => f.Id == ItemResult.FamiliaId.Value);
 
                         if (familia != null)
                         {
@@ -96,7 +100,7 @@ namespace GestorStock.API
                     if (ItemResult.UbicacionProductoId.HasValue)
                     {
                         var ubicacion = (UbicacionProductoComboBox.ItemsSource as IEnumerable<UbicacionProducto>)?
-                                        .FirstOrDefault(up => up.Id == ItemResult.UbicacionProductoId.Value);
+                                                 .FirstOrDefault(up => up.Id == ItemResult.UbicacionProductoId.Value);
                         UbicacionProductoComboBox.SelectedItem = ubicacion;
                     }
 
@@ -104,7 +108,7 @@ namespace GestorStock.API
                     if (ItemResult.TipoSoporteId.HasValue)
                     {
                         var tipoSoporte = (TipoSoporteComboBox.ItemsSource as IEnumerable<TipoSoporte>)?
-                                          .FirstOrDefault(s => s.Id == ItemResult.TipoSoporteId.Value);
+                                                     .FirstOrDefault(s => s.Id == ItemResult.TipoSoporteId.Value);
                         TipoSoporteComboBox.SelectedItem = tipoSoporte;
                     }
                 }
@@ -164,8 +168,8 @@ namespace GestorStock.API
                     var newUbicacion = new UbicacionProducto
                     {
                         Nombre = newLocationName,
-                        FamiliaId = selectedFamilia.Id,
-                        Familia = selectedFamilia
+                        FamiliaId = selectedFamilia.Id
+                        // Se omite la asignación de la entidad Familia para evitar el error de clave duplicada
                     };
 
                     await _ubicacionProductoService.CreateUbicacionProductoAsync(newUbicacion);
@@ -176,7 +180,63 @@ namespace GestorStock.API
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error al agregar la ubicación: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    // Mostrar la excepción interna para un diagnóstico preciso
+                    string errorMessage = $"Error al agregar la ubicación: {ex.Message}";
+
+                    if (ex.InnerException != null)
+                    {
+                        errorMessage += $"\n\nDetalle de la Base de Datos: {ex.InnerException.Message}";
+                    }
+
+                    MessageBox.Show(errorMessage, "Error de Base de Datos", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        // ⭐ MÉTODO CORREGIDO PARA ELIMINAR LA ENTIDAD DE LA BASE DE DATOS ⭐
+        private async void RemoveUbicacionProductoButton_Click(object sender, RoutedEventArgs e)
+        {
+            var ubicacionToDelete = UbicacionProductoComboBox.SelectedItem as UbicacionProducto;
+
+            if (ubicacionToDelete == null)
+            {
+                MessageBox.Show("Por favor, selecciona una Ubicación/Producto de la lista para eliminarla.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"¿Estás seguro de que quieres eliminar la ubicación '{ubicacionToDelete.Nombre}'?\n\nAdvertencia: Esto la eliminará permanentemente de la base de datos y de todos los ítems asociados que no estén guardados.",
+                "Confirmar Eliminación de Ubicación",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    // Llama al servicio para eliminar la entidad de la base de datos
+                    await _ubicacionProductoService.DeleteUbicacionProductoAsync(ubicacionToDelete.Id);
+
+                    // Recarga la lista de ubicaciones para que el ComboBox se actualice
+                    await LoadUbicacionProductosByFamilia();
+
+                    // Limpia la selección en el formulario actual (Importante)
+                    UbicacionProductoComboBox.SelectedItem = null;
+                    ItemResult.UbicacionProducto = null;
+                    ItemResult.UbicacionProductoId = null;
+
+                    MessageBox.Show("Ubicación eliminada correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    string errorMessage = $"Error al eliminar la ubicación: {ex.Message}";
+
+                    if (ex.InnerException != null)
+                    {
+                        errorMessage += $"\n\nDetalle de la Base de Datos: {ex.InnerException.Message}";
+                    }
+                    // Esto suele ocurrir si la ubicación está siendo utilizada por otro registro (violación de clave foránea)
+                    MessageBox.Show(errorMessage, "Error de Eliminación", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

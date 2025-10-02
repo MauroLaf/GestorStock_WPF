@@ -9,5 +9,7 @@ namespace GestorStock.Services.Interfaces
         Task<IEnumerable<UbicacionProducto>> GetAllUbicacionProductosAsync();
         Task<IEnumerable<UbicacionProducto>> GetUbicacionProductosByFamiliaIdAsync(int familiaId);
         Task<UbicacionProducto> CreateUbicacionProductoAsync(UbicacionProducto ubicacionProducto);
+        Task DeleteUbicacionProductoAsync(int id);
+
     }
 }
