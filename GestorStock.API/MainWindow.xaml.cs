@@ -22,7 +22,7 @@ namespace GestorStock.API
         private readonly ITipoItemService _tipoItemService;
         private readonly IPedidoService _pedidoService;
         private readonly IRepuestoService _repuestoService;
-        private readonly ITipoFamiliaService _tipoExplotacionService;
+        private readonly ITipoFamiliaService _tipoFamiliaService;
         private readonly ITipoRepuestoService _tipoRepuestoService;
         private readonly IItemService _itemService;
         private readonly IUbicacionProductoService _ubicacionProductoService; // 1. Variable de clase añadida
@@ -33,7 +33,7 @@ namespace GestorStock.API
         public MainWindow(
             IPedidoService pedidoService,
             IRepuestoService repuestoService,
-            ITipoFamiliaService tipoExplotacionService,
+            ITipoFamiliaService tipoFamiliaService,
             ITipoRepuestoService tipoRepuestoService,
             ITipoItemService tipoItemService,
             IItemService itemService,
@@ -43,7 +43,7 @@ namespace GestorStock.API
 
             _pedidoService = pedidoService;
             _repuestoService = repuestoService;
-            _tipoExplotacionService = tipoExplotacionService;
+            _tipoFamiliaService = tipoFamiliaService;
             _tipoRepuestoService = tipoRepuestoService;
             _tipoItemService = tipoItemService;
             _itemService = itemService;
@@ -73,7 +73,7 @@ namespace GestorStock.API
         {
             try
             {
-                var explotaciones = await _tipoExplotacionService.GetAllTipoFamiliaAsync();
+                var explotaciones = await _tipoFamiliaService.GetAllTipoFamiliaAsync();
                 ExplotacionComboBox.ItemsSource = explotaciones;
                 ExplotacionComboBox.DisplayMemberPath = "Nombre";
                 ExplotacionComboBox.SelectedIndex = -1;
@@ -145,7 +145,7 @@ namespace GestorStock.API
             var createPedidoWindow = new CreatePedidoWindow(
                 _pedidoService,
                 _repuestoService,
-                _tipoExplotacionService,
+                _tipoFamiliaService,
                 _tipoRepuestoService,
                 _tipoItemService,
                 _itemService,
@@ -175,7 +175,7 @@ namespace GestorStock.API
             var editPedidoWindow = new CreatePedidoWindow(
                 _pedidoService,
                 _repuestoService,
-                _tipoExplotacionService,
+                _tipoFamiliaService,
                 _tipoRepuestoService,
                 _tipoItemService,
                 _itemService,
