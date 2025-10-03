@@ -1,30 +1,26 @@
-﻿namespace GestorStock.Model.Entities
+﻿using System.Collections.Generic;
+
+namespace GestorStock.Model.Entities
 {
     public class Item
     {
-        public int Id { get; set; }
+        // ID principal de la entidad
+        public int ItemId { get; set; }
 
-        //Propiedad de NombreProveedor
-        //TODO: DEBO HACERLA LIST ADD/RM
-        public string? NombreProveedor { get; set; }
-
-        // Relación con Pedido
+        // Relación con Pedido (un Pedido contiene muchos Items)
         public int PedidoId { get; set; }
-        public Pedido? Pedido { get; set; }
+        public Pedido Pedido { get; set; }
 
-        // Relación con Familia (lo llamaste TipoFamilia, pero es la misma clase)
+        // Propiedades de relaciones opcionales que son comunes
         public int? FamiliaId { get; set; }
-        public Familia? Familia { get; set; }
+        public Familia Familia { get; set; }
 
-        // Relación con UbicacionProducto
-        public int? UbicacionProductoId { get; set; }
-        public UbicacionProducto? UbicacionProducto { get; set; }
+        public int? UbicacionId { get; set; }
+        public UbicacionProducto UbicacionProducto { get; set; }
 
-        // Relación con TipoSoporte
-        public int? TipoSoporteId { get; set; }
-        public TipoSoporte? TipoSoporte { get; set; }
+        public int? ProveedorId { get; set; }
+        public Proveedor Proveedor { get; set; }
 
-        // Relación con Repuestos
-        public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
+      
     }
 }

@@ -17,6 +17,7 @@ namespace GestorStock.Model.Entities
         public bool Incidencia { get; set; }
         public DateTime? FechaIncidencia { get; set; }
         public string? DescripcionIncidencia { get; set; } = string.Empty;
+        public string? Factura { get; set; } = string.Empty;
 
         public DateTime? FechaLlegada
         {

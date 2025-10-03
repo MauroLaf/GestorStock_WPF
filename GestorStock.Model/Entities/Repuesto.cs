@@ -1,22 +1,17 @@
 ﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GestorStock.Model.Entities
 {
-    public class Repuesto : INotifyPropertyChanged
+    public class Repuesto : Item, INotifyPropertyChanged
     {
-        // Evento que notifica a los suscriptores cuando una propiedad ha cambiado.
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        // Método para invocar el evento.
         protected void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        // Propiedades de la clase Repuesto
-        public int Id { get; set; }
-
+        // Propiedades propias de Repuesto
         private string _nombre = string.Empty;
         public string Nombre
         {
@@ -27,6 +22,20 @@ namespace GestorStock.Model.Entities
                 {
                     _nombre = value;
                     OnPropertyChanged(nameof(Nombre));
+                }
+            }
+        }
+
+        private string _descripcion = string.Empty;
+        public string Descripcion
+        {
+            get => _descripcion;
+            set
+            {
+                if (_descripcion != value)
+                {
+                    _descripcion = value;
+                    OnPropertyChanged(nameof(Descripcion));
                 }
             }
         }
@@ -45,8 +54,6 @@ namespace GestorStock.Model.Entities
             }
         }
 
-        public string Descripcion { get; set; } = string.Empty;
-
         private decimal _precio;
         public decimal Precio
         {
@@ -60,14 +67,18 @@ namespace GestorStock.Model.Entities
                 }
             }
         }
-
-        // Propiedades de navegación para la relación con Item
-        // ¡CAMBIO CLAVE AQUÍ! Hacemos ItemId anulable
-        public int? ItemId { get; set; }
-        public Item? Item { get; set; }
-
-        // Propiedades para la relación con TipoRepuesto
-        public int? TipoRepuestoId { get; set; }
-        public TipoRepuesto? TipoRepuesto { get; set; }
+        private TipoRepuestoEnum _tipoRepuesto;
+        public TipoRepuestoEnum TipoRepuesto
+        {
+            get => _tipoRepuesto;
+            set
+            {
+                if (_tipoRepuesto != value)
+                {
+                    _tipoRepuesto = value;
+                    OnPropertyChanged(nameof(TipoRepuesto));
+                }
+            }
+        }
     }
 }
