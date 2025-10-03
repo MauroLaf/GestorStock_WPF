@@ -7,6 +7,7 @@ namespace GestorStock.Data
     {
         public StockDbContext(DbContextOptions<StockDbContext> options) : base(options) { }
 
+        // Definición de DbSet (Tablas)
         public DbSet<Pedido> Pedidos { get; set; }
         public DbSet<Item> Items { get; set; }
         public DbSet<Repuesto> Repuestos { get; set; }
@@ -19,6 +20,7 @@ namespace GestorStock.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Configuración de tipos de columna
             modelBuilder.Entity<Repuesto>()
                 .Property(r => r.Precio)
                 .HasColumnType("decimal(11, 2)");
@@ -28,23 +30,31 @@ namespace GestorStock.Data
             modelBuilder.Entity<Item>().HasMany(i => i.Repuestos).WithOne(r => r.Item).HasForeignKey(r => r.ItemId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Repuesto>().HasOne(r => r.TipoRepuesto).WithMany(tr => tr.Repuestos).HasForeignKey(r => r.TipoRepuestoId);
 
-            // CORRECCIÓN: Se cambió "TipoItemId" por "TipoSoporteId" para que coincida con la clase Item.
+            // Item a TipoSoporte
             modelBuilder.Entity<Item>().HasOne(i => i.TipoSoporte).WithMany(ts => ts.Items).HasForeignKey(i => i.TipoSoporteId);
 
+            // Item a UbicacionProducto
             modelBuilder.Entity<Item>().HasOne(i => i.UbicacionProducto).WithMany(up => up.Items).HasForeignKey(i => i.UbicacionProductoId);
+
+            // UbicacionProducto a Familia
             modelBuilder.Entity<UbicacionProducto>().HasOne(up => up.Familia).WithMany(f => f.UbicacionProductos).HasForeignKey(up => up.FamiliaId);
 
+            // ------------------------------------
             // Datos Iniciales (Seeding)
+            // ------------------------------------
+
             modelBuilder.Entity<TipoRepuesto>().HasData(
                 new TipoRepuesto { Id = 1, Nombre = "Original" },
                 new TipoRepuesto { Id = 2, Nombre = "Usado" }
             );
+
             modelBuilder.Entity<Familia>().HasData(
                 new Familia { Id = 1, Nombre = "INTERCAMBIADORES" },
                 new Familia { Id = 2, Nombre = "MERCADOS" },
                 new Familia { Id = 3, Nombre = "SETAS DE SEVILLA" },
                 new Familia { Id = 4, Nombre = "EXPLOTACIONES" }
             );
+
             modelBuilder.Entity<TipoSoporte>().HasData(
                 new TipoSoporte { Id = 1, Nombre = "Pantalla LED" },
                 new TipoSoporte { Id = 2, Nombre = "Mupis Digital" },

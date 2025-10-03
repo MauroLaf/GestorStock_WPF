@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestorStock.Data.Migrations
 {
     [DbContext(typeof(StockDbContext))]
-    [Migration("20251002190738_MigracionInicial")]
-    partial class MigracionInicial
+    [Migration("20251003084018_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -68,7 +68,7 @@ namespace GestorStock.Data.Migrations
                     b.Property<int?>("FamiliaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Nombre")
+                    b.Property<string>("NombreProveedor")
                         .HasColumnType("longtext");
 
                     b.Property<int>("PedidoId")

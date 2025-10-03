@@ -27,8 +27,8 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <TextBlock Text="Nombre de Producto:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="NombreProductoTextBox" Grid.Row="0" Grid.Column="1" Margin="0,5" Text="{Binding Nombre, Mode=TwoWay}"/>
+        <TextBlock Text="Proveedor:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="NombreProveedorTextBox" Grid.Row="0" Grid.Column="1" Margin="0,5" Text="{Binding NombreProveedor, Mode=TwoWay}"/>
 
         <TextBlock Text="Familia:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
         <ComboBox x:Name="TipoFamiliaComboBox"

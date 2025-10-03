@@ -75,7 +75,7 @@ namespace GestorStock.API
             {
                 var explotaciones = await _tipoFamiliaService.GetAllTipoFamiliaAsync();
                 ExplotacionComboBox.ItemsSource = explotaciones;
-                ExplotacionComboBox.DisplayMemberPath = "Nombre";
+                ExplotacionComboBox.DisplayMemberPath = "NombreProveedor";
                 ExplotacionComboBox.SelectedIndex = -1;
             }
             catch (Exception ex)
@@ -90,7 +90,7 @@ namespace GestorStock.API
             {
                 var tiposItem = await _tipoItemService.GetAllTipoItemAsync();
                 TipoSoporteComboBox.ItemsSource = tiposItem;
-                TipoSoporteComboBox.DisplayMemberPath = "Nombre";
+                TipoSoporteComboBox.DisplayMemberPath = "NombreProveedor";
                 TipoSoporteComboBox.SelectedIndex = -1;
             }
             catch (Exception ex)
@@ -257,7 +257,7 @@ namespace GestorStock.API
                         {
                             "ID Pedido", "Fecha Creación", "Descripción Pedido", "Incidencia", "Fecha Incidencia", "Fecha Llegada", "Descripción Incidencia",
                             "ID Item", "Ubicación", "Tipo Soporte", "Tipo Explotación",
-                            "ID Repuesto", "Nombre Repuesto", "Cantidad", "Descripción Repuesto", "Precio", "Tipo Repuesto"
+                            "ID Repuesto", "NombreProveedor Repuesto", "Cantidad", "Descripción Repuesto", "Precio", "Tipo Repuesto"
                         };
 
                         for (int i = 0; i < headers.Length; i++)

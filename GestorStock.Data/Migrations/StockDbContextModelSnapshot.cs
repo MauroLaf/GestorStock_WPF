@@ -65,7 +65,7 @@ namespace GestorStock.Data.Migrations
                     b.Property<int?>("FamiliaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Nombre")
+                    b.Property<string>("NombreProveedor")
                         .HasColumnType("longtext");
 
                     b.Property<int>("PedidoId")

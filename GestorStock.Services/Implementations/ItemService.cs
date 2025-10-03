@@ -48,10 +48,10 @@ namespace GestorStock.Services.Implementations
             using (var context = _contextFactory.CreateDbContext())
             {
                 return await context.Items
-                    .Include(i => i.UbicacionProducto!) // <-- Línea 27 o similar
+                    .Include(i => i.UbicacionProducto!)
                         .ThenInclude(up => up.Familia)
-                    .Include(i => i.TipoSoporte!) // <-- Línea 41 o similar
-                    .Include(i => i.Repuestos!) // <-- Línea 55 o similar
+                    .Include(i => i.TipoSoporte!) 
+                    .Include(i => i.Repuestos!)
                         .ThenInclude(r => r.TipoRepuesto!)
                     .FirstOrDefaultAsync(i => i.Id == id);
             }

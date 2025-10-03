@@ -3,7 +3,10 @@
     public class Item
     {
         public int Id { get; set; }
-        public string? Nombre { get; set; }
+
+        //Propiedad de NombreProveedor
+        //TODO: DEBO HACERLA LIST ADD/RM
+        public string? NombreProveedor { get; set; }
 
         // Relación con Pedido
         public int PedidoId { get; set; }
