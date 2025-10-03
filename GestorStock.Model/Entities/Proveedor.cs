@@ -6,10 +6,9 @@ namespace GestorStock.Model.Entities
     {
         public int ProveedorId { get; set; }
         public string? Nombre { get; set; } = string.Empty;
-        public string? Telefono { get; set; } = string.Empty; 
+        public string? Telefono { get; set; } = string.Empty;
         public string? Email { get; set; } = string.Empty;
 
-        // Relación con Items
-        public ICollection<Item> Items { get; set; } = new List<Item>();
+        public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
     }
 }

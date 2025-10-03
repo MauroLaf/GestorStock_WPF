@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace GestorStock.Model.Entities
 {
@@ -10,6 +6,7 @@ namespace GestorStock.Model.Entities
     {
         public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
-        public ICollection<Item> Items { get; set; } = new List<Item>();
+
+        public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
     }
 }

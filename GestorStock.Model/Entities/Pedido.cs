@@ -1,6 +1,6 @@
 ﻿using GestorStock.Model.Entities;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class Pedido : INotifyPropertyChanged
 {
@@ -11,6 +11,7 @@ public class Pedido : INotifyPropertyChanged
     public int Id { get; set; }
     public DateTime FechaCreacion { get; set; }
     public string? Descripcion { get; set; } = string.Empty;
+
     public bool Incidencia { get; set; }
     public DateTime? FechaIncidencia { get; set; }
     public string? DescripcionIncidencia { get; set; } = string.Empty;
@@ -25,7 +26,6 @@ public class Pedido : INotifyPropertyChanged
             {
                 _fechaLlegada = value;
                 OnPropertyChanged(nameof(FechaLlegada));
-                // Notifica el cambio de la propiedad calculada
                 OnPropertyChanged(nameof(EstaVencido));
             }
         }
@@ -33,15 +33,14 @@ public class Pedido : INotifyPropertyChanged
 
     // Relación obligatoria con Familia
     public int FamiliaId { get; set; }
-    public Familia Familia { get; set; }
+    public Familia Familia { get; set; } = null!;
 
-    public ICollection<Item> Items { get; set; } = new List<Item>();
+    // Detalle del pedido
+    public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
 
     [NotMapped]
     public bool EstaVencido => FechaLlegada.HasValue && FechaLlegada.Value.Date <= DateTime.Today.Date;
 
-    protected void OnPropertyChanged(string propertyName)
-    {
+    protected void OnPropertyChanged(string propertyName) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
 }

@@ -1,16 +1,11 @@
-﻿using GestorStock.Model.Entities;
-using System.Collections.Generic;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using GestorStock.Model.Entities;
 
 namespace GestorStock.Services.Interfaces
 {
-    public interface IPedidoService
+    public interface IPedidoService : ICrudService<Pedido, int>
     {
-        Task<IEnumerable<Pedido>> GetAllPedidosAsync();
-        Task<IEnumerable<Pedido>> GetAllPedidosWithDetailsAsync();
-        Task<Pedido?> GetPedidoByIdAsync(int id);
-        Task CreatePedidoAsync(Pedido pedido);
-        Task UpdatePedidoAsync(Pedido pedido);
-        Task DeletePedidoAsync(int id);
+        Task<Pedido?> GetWithDetalleAsync(int id, CancellationToken ct = default);
     }
 }

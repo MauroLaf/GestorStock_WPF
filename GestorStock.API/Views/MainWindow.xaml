@@ -1,12 +1,7 @@
-﻿<Window x:Class="GestorStock.API.MainWindow"
+﻿<Window x:Class="GestorStock.API.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GestorStock.API"
-        xmlns:converters="clr-namespace:GestorStock.API.Converters"
-        mc:Ignorable="d"
-        Title="Gestor de Pedidos" Height="700" Width="1000">
+        Title="GestorStock" Width="1000" Height="650">
 
     <Window.Resources>
         <ResourceDictionary>

@@ -1,15 +1,12 @@
-﻿using GestorStock.Model.Entities;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using GestorStock.Model.Entities;
 
 namespace GestorStock.Services.Interfaces
 {
-    public interface IUbicacionProductoService
+    public interface IUbicacionProductoService : ICrudService<UbicacionProducto, int>
     {
-        Task<IEnumerable<UbicacionProducto>> GetAllUbicacionProductosAsync();
-        Task<IEnumerable<UbicacionProducto>> GetUbicacionProductosByFamiliaIdAsync(int familiaId);
-        Task<UbicacionProducto> CreateUbicacionProductoAsync(UbicacionProducto ubicacionProducto);
-        Task DeleteUbicacionProductoAsync(int id);
-
+        Task<List<UbicacionProducto>> GetByFamiliaAsync(int familiaId, CancellationToken ct = default);
     }
 }

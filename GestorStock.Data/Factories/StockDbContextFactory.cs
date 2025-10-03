@@ -9,8 +9,11 @@ namespace GestorStock.Data.Factories
         {
             var optionsBuilder = new DbContextOptionsBuilder<StockDbContext>();
 
-            var connectionString = "server=localhost;port=3306;database=GestorStockDb;user=gestor;password=12345;";
+            // Ajusta tu cadena de conexión
+            var connectionString =
+                "server=localhost;port=3306;database=GestorStockDb;user=gestor;password=12345;";
 
+            // Pomelo.EntityFrameworkCore.MySql
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 
             return new StockDbContext(optionsBuilder.Options);

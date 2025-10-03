@@ -1,5 +1,5 @@
-﻿using GestorStock.Model.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using GestorStock.Model.Entities;
 
 namespace GestorStock.Data
 {
@@ -7,53 +7,75 @@ namespace GestorStock.Data
     {
         public StockDbContext(DbContextOptions<StockDbContext> options) : base(options) { }
 
-        // Definición de DbSet (Tablas)
-        public DbSet<TipoRepuesto> TipoRepuestos { get; set; }
-        public DbSet<Familia> Familias { get; set; }
-        public DbSet<TipoSoporte> TipoSoportes { get; set; }
-        public DbSet<UbicacionProducto> UbicacionProductos { get; set; }
-        public DbSet<Proveedor> Proveedores { get; set; }
+        public DbSet<Pedido> Pedidos => Set<Pedido>();
+        public DbSet<Repuesto> Repuestos => Set<Repuesto>();
+        public DbSet<Familia> Familias => Set<Familia>();
+        public DbSet<Proveedor> Proveedores => Set<Proveedor>();
+        public DbSet<UbicacionProducto> UbicacionProductos => Set<UbicacionProducto>();
+        public DbSet<TipoSoporte> TipoSoportes => Set<TipoSoporte>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configuración de las entidades (relaciones, restricciones, etc.)
+            // ===== Pedido =====
+            modelBuilder.Entity<Pedido>(e =>
+            {
+                e.HasKey(p => p.Id);
 
-            modelBuilder.Entity<TipoRepuesto>()
-                .HasKey(tr => tr.Id);
+                e.HasOne(p => p.Familia)
+                 .WithMany(f => f.Pedidos)       // 1 Familia -> N Pedidos
+                 .HasForeignKey(p => p.FamiliaId)
+                 .IsRequired()
+                 .OnDelete(DeleteBehavior.Restrict); // impide borrar una Familia con pedidos
 
-            modelBuilder.Entity<Familia>()
-                .HasKey(f => f.Id);
+                e.HasMany(p => p.Repuestos)
+                 .WithOne(r => r.Pedido)
+                 .HasForeignKey(r => r.PedidoId)
+                 .IsRequired()
+                 .OnDelete(DeleteBehavior.Cascade);  // borrar Pedido borra sus Repuestos
+            });
 
-            modelBuilder.Entity<TipoSoporte>()
-                .HasKey(ts => ts.Id);
+            // ===== Repuesto =====
+            modelBuilder.Entity<Repuesto>(e =>
+            {
+                e.HasKey(r => r.Id);
 
-            modelBuilder.Entity<UbicacionProducto>()
-                .HasKey(up => up.Id);
+                // (Opcionales de calidad)
+                e.Property(r => r.Nombre).IsRequired();
+                e.Property(r => r.Precio).HasColumnType("decimal(18,2)");
 
-            modelBuilder.Entity<Proveedor>()
-                .HasKey(p => p.Id);
+                e.HasOne(r => r.Familia)
+                 .WithMany(f => f.Repuestos)
+                 .HasForeignKey(r => r.FamiliaId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Relaciones entre Familias y Ubicaciones
-            modelBuilder.Entity<UbicacionProducto>()
-                .HasOne(up => up.Familia)
-                .WithMany(f => f.Ubicaciones)
-                .HasForeignKey(up => up.FamiliaId);
+                e.HasOne(r => r.UbicacionProducto)
+                 .WithMany(u => u.Repuestos)
+                 .HasForeignKey(r => r.UbicacionProductoId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Proveedor>()
-                .HasMany(p => p.Familias)
-                .WithOne(f => f.Proveedor)
-                .HasForeignKey(f => f.ProveedorId);
+                e.HasOne(r => r.Proveedor)
+                 .WithMany(pv => pv.Repuestos)
+                 .HasForeignKey(r => r.ProveedorId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
-            // ------------------------------------
-            // Datos Iniciales (Seeding) 
-            // ------------------------------------
+                // TipoSoporte OBLIGATORIO por línea (como pediste)
+                e.HasOne(r => r.TipoSoporte)
+                 .WithMany(ts => ts.Repuestos)
+                 .HasForeignKey(r => r.TipoSoporteId)
+                 .OnDelete(DeleteBehavior.Restrict);
+            });
 
-            modelBuilder.Entity<TipoRepuesto>().HasData(
-                new TipoRepuesto { Id = 1, Nombre = "Original" },
-                new TipoRepuesto { Id = 2, Nombre = "Usado" }
+            modelBuilder.Entity<Proveedor>().HasData(
+                new Proveedor { ProveedorId = 1, Nombre = "Proveedor Prueba" }
             );
+
+            modelBuilder.Entity<Repuesto>().HasData(
+                new Repuesto { Id = 1, Nombre = "Repuesto Prueba" }
+            );
+
+            // ================== SEEDING ==================
 
             modelBuilder.Entity<Familia>().HasData(
                 new Familia { Id = 1, Nombre = "INTERCAMBIADORES" },
@@ -69,8 +91,8 @@ namespace GestorStock.Data
                 new TipoSoporte { Id = 4, Nombre = "Skyled" }
             );
 
-            // Ubicaciones de INTERCAMBIADORES (FamiliaId = 1)
             modelBuilder.Entity<UbicacionProducto>().HasData(
+                // INTERCAMBIADORES (FamiliaId = 1)
                 new UbicacionProducto { Id = 5, Nombre = "Skyled moncloa", FamiliaId = 1 },
                 new UbicacionProducto { Id = 6, Nombre = "Skyled plaza elíptica fachada", FamiliaId = 1 },
                 new UbicacionProducto { Id = 7, Nombre = "Skyled plaza elíptica lateral a-42", FamiliaId = 1 },
@@ -91,7 +113,7 @@ namespace GestorStock.Data
                 new UbicacionProducto { Id = 29, Nombre = "20 mupis digitales (plaza elíptica)", FamiliaId = 1 },
                 new UbicacionProducto { Id = 30, Nombre = "Pantalla digital nivel -1 (plaza elíptica)", FamiliaId = 1 },
 
-                // Ubicaciones de MERCADOS (FamiliaId = 2)
+                // MERCADOS (FamiliaId = 2)
                 new UbicacionProducto { Id = 31, Nombre = "Mercado plaza de abastos", FamiliaId = 2 },
                 new UbicacionProducto { Id = 32, Nombre = "Mercado de chamartín", FamiliaId = 2 },
                 new UbicacionProducto { Id = 33, Nombre = "Mercado de correos", FamiliaId = 2 },
@@ -111,14 +133,14 @@ namespace GestorStock.Data
                 new UbicacionProducto { Id = 47, Nombre = "Mercado del val", FamiliaId = 2 },
                 new UbicacionProducto { Id = 48, Nombre = "Cúpula del milenio (valladolid)", FamiliaId = 2 },
 
-                // Ubicaciones de SETAS DE SEVILLA (FamiliaId = 3)
+                // SETAS DE SEVILLA (FamiliaId = 3)
                 new UbicacionProducto { Id = 10, Nombre = "Skyled las setas de sevilla columna", FamiliaId = 3 },
                 new UbicacionProducto { Id = 11, Nombre = "Skyled las setas de sevilla mupi", FamiliaId = 3 },
                 new UbicacionProducto { Id = 12, Nombre = "Skyled las setas de sevilla rampa", FamiliaId = 3 },
                 new UbicacionProducto { Id = 13, Nombre = "Skyled las setas de sevilla mercado", FamiliaId = 3 },
                 new UbicacionProducto { Id = 14, Nombre = "Skyled las setas de sevilla parasol", FamiliaId = 3 },
 
-                // Ubicaciones de EXPLOTACIONES (FamiliaId = 4)
+                // EXPLOTACIONES (FamiliaId = 4)
                 new UbicacionProducto { Id = 1, Nombre = "Skyled basauri (cc bilbondo)", FamiliaId = 4 },
                 new UbicacionProducto { Id = 2, Nombre = "Skyled cc niessen", FamiliaId = 4 },
                 new UbicacionProducto { Id = 3, Nombre = "Skyled cc zubiarte (cc zubiarte)", FamiliaId = 4 },

@@ -4,8 +4,8 @@ using GestorStock.Services.Interfaces;
 
 namespace GestorStock.Services.Implementations
 {
-    public class RepuestoService : BaseCrudService<Repuesto, int>, IRepuestoService
+    public class FamiliaService : BaseCrudService<Familia, int>, IFamiliaService
     {
-        public RepuestoService(StockDbContext ctx) : base(ctx) { }
+        public FamiliaService(StockDbContext ctx) : base(ctx) { }
     }
 }

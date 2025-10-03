@@ -1,11 +1,11 @@
-﻿using GestorStock.Model.Entities;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using GestorStock.Model.Enum;
 
 namespace GestorStock.Services.Interfaces
 {
     public interface ITipoRepuestoService
     {
-        Task<IEnumerable<TipoRepuesto>> GetAllTipoRepuestoAsync();
+        Task<List<TipoRepuestoEnum>> GetAllAsync();
     }
 }

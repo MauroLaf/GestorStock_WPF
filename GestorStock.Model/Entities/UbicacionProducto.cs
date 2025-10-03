@@ -1,13 +1,13 @@
-﻿using GestorStock.Model.Entities;
-
-public class UbicacionProducto
+﻿namespace GestorStock.Model.Entities
 {
-    public int Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;
+    public class UbicacionProducto
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
-    // Relación obligatoria con Familia
-    public int FamiliaId { get; set; }
-    public Familia Familia { get; set; }
+        public int FamiliaId { get; set; }
+        public Familia Familia { get; set; } = null!;
 
-    public ICollection<Item> Items { get; set; } = new List<Item>();
+        public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
+    }
 }

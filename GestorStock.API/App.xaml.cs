@@ -1,86 +1,57 @@
-﻿using GestorStock.Data; // Asegúrate de que el using sea GestorStock.Data
-using GestorStock.Model.Entities;
-using GestorStock.Services;
-using GestorStock.Services.Implementations;
+﻿using System;
+using System.Windows;
+using GestorStock.Data;
 using GestorStock.Services.Interfaces;
+using GestorStock.Services.Implementations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OfficeOpenXml;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace GestorStock.API
 {
     public partial class App : Application
     {
-        private readonly IServiceProvider _serviceProvider;
-        private IConfiguration Configuration { get; } // Cambia a un get;
+        // Acceso global al contenedor (para tus code-behind)
+        public static IServiceProvider Services { get; private set; } = default!;
 
-        public App()
+        protected override void OnStartup(StartupEventArgs e)
         {
-            ExcelPackage.License.SetNonCommercialPersonal("MAURO");
-
-            IServiceCollection services = new ServiceCollection();
-            // Construye la configuración aquí y la pasa al método de configuración
-            Configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            ConfigureServices(services);
-            _serviceProvider = services.BuildServiceProvider();
-        }
-
-        private void ConfigureServices(IServiceCollection services)
-        {
-            services.AddSingleton(Configuration);
-
-            string connectionString = Configuration.GetConnectionString("DefaultConnection")?? throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no está configurada en appsettings.json.");
-
-            services.AddDbContextFactory<StockDbContext>(options =>options.UseMySql(connectionString, ServerVersion.Parse("8.0.21-mysql"))
-        );
-
-            // Aquí puedes agregar tus servicios y ventanas como lo tenías
-            services.AddSingleton<ITipoItemService, TipoItemService>();
-            services.AddSingleton<IPedidoService, PedidoService>();
-            services.AddSingleton<IItemService, ItemService>();
-            services.AddSingleton<ITipoFamiliaService, TipoFamiliaService>();
-            services.AddSingleton<IRepuestoService, RepuestoService>();
-            services.AddSingleton<ITipoRepuestoService, TipoRepuestoService>();
-            services.AddTransient<IUbicacionProductoService, UbicacionProductoService>();
-
-            // Las ventanas también se agregan aquí
-            services.AddTransient<MainWindow>();
-            services.AddTransient<CreatePedidoWindow>();
-            services.AddTransient<AddItemWindow>();
-        }
-
-        protected override async void OnStartup(StartupEventArgs e)
-        {
-            try
-            {
-                var pedidoService = _serviceProvider.GetRequiredService<IPedidoService>();
-                var todosLosPedidos = await pedidoService.GetAllPedidosAsync();
-                var pedidosVencidos = todosLosPedidos.Where(p => p.EstaVencido).ToList();
-
-                if (pedidosVencidos.Any())
-                {
-                    var mensaje = $"¡ALERTA DE PEDIDOS VENCIDOS!\n\nSe han encontrado {pedidosVencidos.Count} pedido(s) cuya fecha de llegada ha pasado.";
-                    MessageBox.Show(mensaje, "Pedidos Vencidos", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al verificar pedidos vencidos: {ex.Message}", "Error de Base de Datos", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
             base.OnStartup(e);
 
-            // Usa GetRequiredService<T>() en su lugar para garantizar que el servicio exista.
-            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
+            // 1) Config
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
+
+            var cs = config.GetConnectionString("Default")
+                     ?? "server=localhost;port=3306;database=GestorStockDb;user=gestor;password=12345;";
+
+            // 2) DI
+            var sc = new ServiceCollection();
+
+            // DbContext (MySQL con Pomelo)
+            sc.AddDbContext<StockDbContext>(o => o.UseMySql(cs, ServerVersion.AutoDetect(cs)));
+
+            // Servicios (CRUDs)
+            sc.AddScoped<IFamiliaService, FamiliaService>();
+            sc.AddScoped<IUbicacionProductoService, UbicacionProductoService>();
+            sc.AddScoped<IProveedorService, ProveedorService>();
+            sc.AddScoped<ITipoSoporteService, TipoSoporteService>();
+            sc.AddScoped<ITipoRepuestoService, TipoRepuestoService>(); // enum (no tabla)
+            sc.AddScoped<IPedidoService, PedidoService>();
+            sc.AddScoped<IRepuestoService, RepuestoService>();
+
+            // Ventanas (registra las que uses)
+            sc.AddTransient<MainWindow>();            // tu ventana principal existente
+            sc.AddTransient<CreatePedidoWindow>();    // si la usas
+            sc.AddTransient<AddItemWindow>();         // si la usas
+
+            Services = sc.BuildServiceProvider();
+
+            // 3) Abrir tu ventana principal actual (manteniendo code-behind)
+            var main = Services.GetRequiredService<MainWindow>();
+            main.Show();
         }
     }
 }

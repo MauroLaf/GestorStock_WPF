@@ -2,5 +2,5 @@
 
 namespace GestorStock.Services.Interfaces
 {
-    public interface IRepuestoService : ICrudService<Repuesto, int> { }
+    public interface IProveedorService : ICrudService<Proveedor, int> { }
 }
