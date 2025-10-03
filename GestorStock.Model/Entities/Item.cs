@@ -1,26 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using GestorStock.Model.Entities;
 
-namespace GestorStock.Model.Entities
+public class Item
 {
-    public class Item
-    {
-        // ID principal de la entidad
-        public int ItemId { get; set; }
+    public int ItemId { get; set; }
 
-        // Relación con Pedido (un Pedido contiene muchos Items)
-        public int PedidoId { get; set; }
-        public Pedido Pedido { get; set; }
+    // Relación con Pedido
+    public int PedidoId { get; set; }
+    public Pedido Pedido { get; set; }
 
-        // Propiedades de relaciones opcionales que son comunes
-        public int? FamiliaId { get; set; }
-        public Familia Familia { get; set; }
+    // Relación obligatoria con Familia
+    public int FamiliaId { get; set; }
+    public Familia Familia { get; set; }
 
-        public int? UbicacionId { get; set; }
-        public UbicacionProducto UbicacionProducto { get; set; }
+    // Relación obligatoria con UbicacionProducto
+    public int UbicacionProductoId { get; set; }
+    public UbicacionProducto UbicacionProducto { get; set; }
 
-        public int? ProveedorId { get; set; }
-        public Proveedor Proveedor { get; set; }
-
-      
-    }
+    // Relación obligatoria con Proveedor
+    public int ProveedorId { get; set; }
+    public Proveedor Proveedor { get; set; }
 }

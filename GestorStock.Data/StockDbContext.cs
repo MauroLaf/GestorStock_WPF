@@ -8,39 +8,46 @@ namespace GestorStock.Data
         public StockDbContext(DbContextOptions<StockDbContext> options) : base(options) { }
 
         // Definición de DbSet (Tablas)
-        public DbSet<Pedido> Pedidos { get; set; }
-        public DbSet<Item> Items { get; set; }
-        public DbSet<Repuesto> Repuestos { get; set; }
         public DbSet<TipoRepuesto> TipoRepuestos { get; set; }
         public DbSet<Familia> Familias { get; set; }
-        public DbSet<TipoSoporte> TiposSoporte { get; set; }
+        public DbSet<TipoSoporte> TipoSoportes { get; set; }
         public DbSet<UbicacionProducto> UbicacionProductos { get; set; }
+        public DbSet<Proveedor> Proveedores { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configuración de tipos de columna
-            modelBuilder.Entity<Repuesto>()
-                .Property(r => r.Precio)
-                .HasColumnType("decimal(11, 2)");
+            // Configuración de las entidades (relaciones, restricciones, etc.)
 
-            // Definición de las relaciones
-            modelBuilder.Entity<Pedido>().HasMany(p => p.Items).WithOne(i => i.Pedido).HasForeignKey(i => i.PedidoId);
-            modelBuilder.Entity<Item>().HasMany(i => i.Repuestos).WithOne(r => r.Item).HasForeignKey(r => r.ItemId).OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<Repuesto>().HasOne(r => r.TipoRepuesto).WithMany(tr => tr.Repuestos).HasForeignKey(r => r.TipoRepuestoId);
+            modelBuilder.Entity<TipoRepuesto>()
+                .HasKey(tr => tr.Id);
 
-            // Item a TipoSoporte
-            modelBuilder.Entity<Item>().HasOne(i => i.TipoSoporte).WithMany(ts => ts.Items).HasForeignKey(i => i.TipoSoporteId);
+            modelBuilder.Entity<Familia>()
+                .HasKey(f => f.Id);
 
-            // Item a UbicacionProducto
-            modelBuilder.Entity<Item>().HasOne(i => i.UbicacionProducto).WithMany(up => up.Items).HasForeignKey(i => i.UbicacionProductoId);
+            modelBuilder.Entity<TipoSoporte>()
+                .HasKey(ts => ts.Id);
 
-            // UbicacionProducto a Familia
-            modelBuilder.Entity<UbicacionProducto>().HasOne(up => up.Familia).WithMany(f => f.UbicacionProductos).HasForeignKey(up => up.FamiliaId);
+            modelBuilder.Entity<UbicacionProducto>()
+                .HasKey(up => up.Id);
+
+            modelBuilder.Entity<Proveedor>()
+                .HasKey(p => p.Id);
+
+            // Relaciones entre Familias y Ubicaciones
+            modelBuilder.Entity<UbicacionProducto>()
+                .HasOne(up => up.Familia)
+                .WithMany(f => f.Ubicaciones)
+                .HasForeignKey(up => up.FamiliaId);
+
+            modelBuilder.Entity<Proveedor>()
+                .HasMany(p => p.Familias)
+                .WithOne(f => f.Proveedor)
+                .HasForeignKey(f => f.ProveedorId);
 
             // ------------------------------------
-            // Datos Iniciales (Seeding)
+            // Datos Iniciales (Seeding) 
             // ------------------------------------
 
             modelBuilder.Entity<TipoRepuesto>().HasData(
