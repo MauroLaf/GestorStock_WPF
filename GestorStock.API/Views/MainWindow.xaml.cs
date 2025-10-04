@@ -64,6 +64,12 @@ namespace GestorStock.API.Views
             await CargarFamiliasAsync();
             await CargarTiposSoporteAsync();
             await CargarTodosLosPedidosAsync();
+
+            // --- Alerta pedidos vencidos ---
+            var vencidos = _pedidos.Count(p => p?.EstaVencido == true);
+            if (vencidos > 0)
+                MessageBox.Show($"Tienes {vencidos} pedido(s) vencido(s).", "Atención",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
         private async Task CargarFamiliasAsync()
