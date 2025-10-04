@@ -37,7 +37,9 @@ namespace GestorStock.API
         {
             services.AddSingleton(Configuration);
 
-            string connectionString = Configuration.GetConnectionString("DefaultConnection")?? throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no está configurada en appsettings.json.");
+            //string connectionString = Configuration.GetConnectionString("DefaultConnection")?? throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no está configurada en appsettings.json.");
+            //para test
+            string connectionString = Configuration.GetConnectionString("TestConnection") ?? throw new InvalidOperationException("La cadena de conexión 'DefaultConnection' no está configurada en appsettings.json.");
 
             services.AddDbContextFactory<StockDbContext>(options =>options.UseMySql(connectionString, ServerVersion.Parse("8.0.21-mysql"))
         );
