@@ -15,11 +15,14 @@ namespace GestorStock.Data
         public DbSet<Proveedor> Proveedores => Set<Proveedor>();
         public DbSet<UbicacionProducto> UbicacionProductos => Set<UbicacionProducto>();
         public DbSet<TipoSoporte> TipoSoportes => Set<TipoSoporte>();
-        public DbSet<RepuestoCatalogo> RepuestoCatalogos => Set<RepuestoCatalogo>(); // <- nombre consistente
+        public DbSet<RepuestoCatalogo> RepuestoCatalogos => Set<RepuestoCatalogo>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            //(Opcional, si usas Pomelo MySQL) Charset/Collation consistentes
+            modelBuilder.HasCharSet("utf8mb4").UseCollation("utf8mb4_general_ci");
 
             // ===== Pedido =====
             modelBuilder.Entity<Pedido>(e =>
@@ -27,16 +30,16 @@ namespace GestorStock.Data
                 e.HasKey(p => p.Id);
 
                 e.HasOne(p => p.Familia)
-                 .WithMany(f => f.Pedidos)              // 1 Familia -> N Pedidos
+                 .WithMany(f => f.Pedidos)
                  .HasForeignKey(p => p.FamiliaId)
                  .IsRequired()
-                 .OnDelete(DeleteBehavior.Restrict);    // impide borrar familia con pedidos
+                 .OnDelete(DeleteBehavior.Restrict);
 
                 e.HasMany(p => p.Repuestos)
                  .WithOne(r => r.Pedido)
                  .HasForeignKey(r => r.PedidoId)
                  .IsRequired()
-                 .OnDelete(DeleteBehavior.Cascade);     // borrar Pedido borra Repuestos
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ===== Repuesto =====
@@ -45,7 +48,14 @@ namespace GestorStock.Data
                 e.HasKey(r => r.Id);
 
                 e.Property(r => r.Nombre).IsRequired();
-                e.Property(r => r.Precio).HasColumnType("decimal(18,2)");
+
+                // Mejor precisión en MySQL (Pomelo): usa HasPrecision (evita cadenas de tipo)
+                e.Property(r => r.Precio).HasPrecision(18, 2);
+
+                // *** CLAVE: mapear enum a int para evitar errores de seeding/migración
+                e.Property(r => r.TipoRepuesto)
+                 .HasConversion<int>()
+                 .IsRequired();
 
                 e.HasOne(r => r.Familia)
                  .WithMany(f => f.Repuestos)
@@ -57,9 +67,8 @@ namespace GestorStock.Data
                  .HasForeignKey(r => r.UbicacionProductoId)
                  .OnDelete(DeleteBehavior.Restrict);
 
-                // Tu clase Proveedor no tiene colección de Repuestos, por eso usamos .WithMany() sin lambda
                 e.HasOne(r => r.Proveedor)
-                 .WithMany()
+                 .WithMany() // tu Proveedor no tiene ICollection<Repuesto>
                  .HasForeignKey(r => r.ProveedorId)
                  .OnDelete(DeleteBehavior.Restrict);
 
@@ -102,7 +111,6 @@ namespace GestorStock.Data
             });
 
             // ================== SEEDING ==================
-            // Familias
             modelBuilder.Entity<Familia>().HasData(
                 new Familia { Id = 1, Nombre = "INTERCAMBIADORES" },
                 new Familia { Id = 2, Nombre = "MERCADOS" },
@@ -110,7 +118,6 @@ namespace GestorStock.Data
                 new Familia { Id = 4, Nombre = "EXPLOTACIONES" }
             );
 
-            // TipoSoportes
             modelBuilder.Entity<TipoSoporte>().HasData(
                 new TipoSoporte { Id = 1, Nombre = "Pantalla LED" },
                 new TipoSoporte { Id = 2, Nombre = "Mupis Digital" },
@@ -118,12 +125,10 @@ namespace GestorStock.Data
                 new TipoSoporte { Id = 4, Nombre = "Skyled" }
             );
 
-            // Proveedor demo
             modelBuilder.Entity<Proveedor>().HasData(
                 new Proveedor { Id = 1, Nombre = "Proveedor Demo" }
             );
 
-            // Ubicaciones (extracto, deja las que pasaste)
             modelBuilder.Entity<UbicacionProducto>().HasData(
                 // INTERCAMBIADORES (FamiliaId = 1)
                 new UbicacionProducto { Id = 5, Nombre = "Skyled moncloa", FamiliaId = 1 },
@@ -182,12 +187,11 @@ namespace GestorStock.Data
                 new UbicacionProducto { Id = 9, Nombre = "Skyled valladolid (cc vallsur)", FamiliaId = 4 }
             );
 
-            // Pedido demo
             modelBuilder.Entity<Pedido>().HasData(
                 new Pedido { Id = 1, FechaCreacion = new DateTime(2025, 10, 04), FamiliaId = 1, Descripcion = "Pedido demo" }
             );
 
-            // Repuesto demo (si da problema, comentá este bloque, generá la migración, y luego lo volvés a activar)
+            // Si esto te vuelve a dar lío, coméntalo, crea la migración y luego lo reactivas.
             modelBuilder.Entity<Repuesto>().HasData(
                 new Repuesto
                 {
@@ -196,7 +200,7 @@ namespace GestorStock.Data
                     Descripcion = "",
                     Cantidad = 1,
                     Precio = 0m,
-                    TipoRepuesto = GestorStock.Model.Enum.TipoRepuestoEnum.Original, // fully-qualified por las dudas
+                    TipoRepuesto = TipoRepuestoEnum.Original, // enum real (mapeado a int)
                     FamiliaId = 1,
                     UbicacionProductoId = 5,
                     ProveedorId = 1,
