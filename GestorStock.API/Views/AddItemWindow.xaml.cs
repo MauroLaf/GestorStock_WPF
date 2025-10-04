@@ -3,446 +3,248 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using GestorStock.Data;
 using GestorStock.Model.Entities;
 using GestorStock.Model.Enum;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualBasic; // Para Interaction.InputBox
+using GestorStock.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GestorStock.API.Views
 {
     public partial class AddItemWindow : Window
     {
-        private readonly StockDbContext _ctx;
+        private readonly IProveedorService _proveedorService;
+        private readonly IFamiliaService _familiaService;
+        private readonly IUbicacionProductoService _ubicacionService;
+        private readonly ITipoSoporteService _tipoSoporteService;
+        private readonly IRepuestoCatalogoService _catalogoService;
+        private readonly IServiceProvider _sp;
 
-        private readonly ObservableCollection<Repuesto> _lineas = new();
-        private int _editIndex = -1;
+        private readonly ObservableCollection<Repuesto> _buffer = new();
+        private int? _editIndex = null;
 
-        // Exponer resultados al CreatePedidoWindow
-        public Repuesto? RepuestoCreado => _lineas.FirstOrDefault();
-        public System.Collections.Generic.IReadOnlyList<Repuesto> RepuestosCreados => _lineas.ToList();
+        public ReadOnlyObservableCollection<Repuesto> RepuestosCreados => new(_buffer);
 
-        public AddItemWindow(StockDbContext ctx)
+        public AddItemWindow(
+            IProveedorService proveedorService,
+            IFamiliaService familiaService,
+            IUbicacionProductoService ubicacionService,
+            ITipoSoporteService tipoSoporteService,
+            IRepuestoCatalogoService catalogoService,
+            IServiceProvider sp)
         {
             InitializeComponent();
-            _ctx = ctx;
+            _proveedorService = proveedorService;
+            _familiaService = familiaService;
+            _ubicacionService = ubicacionService;
+            _tipoSoporteService = tipoSoporteService;
+            _catalogoService = catalogoService;
+            _sp = sp;
 
-            Loaded += AddItemWindow_Loaded;
-            dgRepuestos.ItemsSource = _lineas;
+            dgTemp.ItemsSource = _buffer;
+
+            Loaded += async (_, __) => await CargarCombosAsync();
         }
 
-        private async void AddItemWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            await CargarCombosAsync();
-        }
-
-        #region Carga de combos
+        #region Carga combos / dependencias
         private async Task CargarCombosAsync()
         {
-            cmbFamilia.ItemsSource = await _ctx.Familias.AsNoTracking().OrderBy(f => f.Nombre).ToListAsync();
-            cmbProveedor.ItemsSource = await _ctx.Proveedores.AsNoTracking().OrderBy(p => p.Nombre).ToListAsync();
-            cmbTipoSoporte.ItemsSource = await _ctx.TipoSoportes.AsNoTracking().OrderBy(t => t.Nombre).ToListAsync();
-            cmbTipoRepuesto.ItemsSource = Enum.GetValues(typeof(TipoRepuestoEnum));
-
-            if (cmbFamilia.SelectedItem is Familia) await CargarUbicacionesAsync();
-        }
-
-        private async Task CargarUbicacionesAsync()
-        {
-            cmbUbicacion.ItemsSource = null;
-            if (cmbFamilia.SelectedItem is Familia fam)
-            {
-                cmbUbicacion.ItemsSource = await _ctx.UbicacionProductos
-                    .Where(u => u.FamiliaId == fam.Id)
-                    .OrderBy(u => u.Nombre)
-                    .AsNoTracking()
-                    .ToListAsync();
-            }
+            cmbProveedor.ItemsSource = await _proveedorService.GetAllAsync();
+            cmbFamilia.ItemsSource = await _familiaService.GetAllAsync();
+            cmbTipoSoporte.ItemsSource = await _tipoSoporteService.GetAllAsync();
+            cmbRepuestoCat.ItemsSource = await _catalogoService.GetAllAsync();
         }
 
         private async void cmbFamilia_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-            => await CargarUbicacionesAsync();
-        #endregion
-
-        #region + / - PROVEEDOR
-        private async void BtnAddProveedor_Click(object sender, RoutedEventArgs e)
         {
-            var nombre = (Interaction.InputBox("Nombre del proveedor:", "Añadir Proveedor", "") ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(nombre)) return;
-
-            var existe = await _ctx.Proveedores.AnyAsync(p => p.Nombre == nombre);
-            if (existe)
-            {
-                MessageBox.Show("Ya existe un proveedor con ese nombre.", "Duplicado",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var nuevo = new Proveedor { Nombre = nombre };
-            _ctx.Proveedores.Add(nuevo);
-            await _ctx.SaveChangesAsync();
-
-            cmbProveedor.ItemsSource = await _ctx.Proveedores.AsNoTracking().OrderBy(p => p.Nombre).ToListAsync();
-            cmbProveedor.SelectedItem = (cmbProveedor.ItemsSource as System.Collections.Generic.IEnumerable<Proveedor>)?
-                .FirstOrDefault(p => p.ProveedorId == nuevo.ProveedorId);
-        }
-
-        private async void BtnDelProveedor_Click(object sender, RoutedEventArgs e)
-        {
-            if (cmbProveedor.SelectedItem is not Proveedor prov)
-            {
-                MessageBox.Show("Selecciona un proveedor.", "Info",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            var enUso = await _ctx.Repuestos.AnyAsync(r => r.ProveedorId == prov.ProveedorId);
-            if (enUso)
-            {
-                MessageBox.Show("No se puede eliminar: el proveedor está en uso por algún repuesto.",
-                    "Operación no permitida", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-
-            if (MessageBox.Show($"¿Eliminar proveedor '{prov.Nombre}'?", "Confirmar",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-
-            _ctx.Proveedores.Remove(prov);
-            await _ctx.SaveChangesAsync();
-
-            cmbProveedor.ItemsSource = await _ctx.Proveedores.AsNoTracking().OrderBy(p => p.Nombre).ToListAsync();
-            cmbProveedor.SelectedIndex = -1;
+            if (cmbFamilia.SelectedItem is Familia fam)
+                cmbUbicacion.ItemsSource = await _ubicacionService.GetByFamiliaAsync(fam.Id);
+            else
+                cmbUbicacion.ItemsSource = null;
         }
         #endregion
 
-        #region + / - FAMILIA
-        private async void BtnAddFamilia_Click(object sender, RoutedEventArgs e)
+        #region "+" y "-" de combos (InputBox rápido)
+        private static string? Input(string titulo, string msg)
         {
-            var nombre = (Interaction.InputBox("Nombre de la familia:", "Añadir Familia", "") ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(nombre)) return;
-
-            var existe = await _ctx.Familias.AnyAsync(f => f.Nombre == nombre);
-            if (existe)
-            {
-                MessageBox.Show("Ya existe una familia con ese nombre.", "Duplicado",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var nueva = new Familia { Nombre = nombre };
-            _ctx.Familias.Add(nueva);
-            await _ctx.SaveChangesAsync();
-
-            cmbFamilia.ItemsSource = await _ctx.Familias.AsNoTracking().OrderBy(f => f.Nombre).ToListAsync();
-            cmbFamilia.SelectedItem = (cmbFamilia.ItemsSource as System.Collections.Generic.IEnumerable<Familia>)?
-                .FirstOrDefault(f => f.Id == nueva.Id);
-
-            await CargarUbicacionesAsync();
+            return Microsoft.VisualBasic.Interaction.InputBox(msg, titulo, "");
         }
 
-        private async void BtnDelFamilia_Click(object sender, RoutedEventArgs e)
+        private async void btnAddProveedor_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbFamilia.SelectedItem is not Familia fam)
-            {
-                MessageBox.Show("Selecciona una familia.", "Info",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            var enUso = await _ctx.Repuestos.AnyAsync(r => r.FamiliaId == fam.Id)
-                        || await _ctx.UbicacionProductos.AnyAsync(u => u.FamiliaId == fam.Id);
-            if (enUso)
-            {
-                MessageBox.Show("No se puede eliminar: hay ubicaciones o repuestos asociados.",
-                    "Operación no permitida", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-
-            if (MessageBox.Show($"¿Eliminar familia '{fam.Nombre}'?", "Confirmar",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-
-            _ctx.Familias.Remove(fam);
-            await _ctx.SaveChangesAsync();
-
-            cmbFamilia.ItemsSource = await _ctx.Familias.AsNoTracking().OrderBy(f => f.Nombre).ToListAsync();
-            cmbFamilia.SelectedIndex = -1;
-            cmbUbicacion.ItemsSource = null;
+            var txt = Input("Nuevo proveedor", "Nombre:");
+            if (string.IsNullOrWhiteSpace(txt)) return;
+            var nuevo = await _proveedorService.CreateAsync(new Proveedor { Nombre = txt.Trim() });
+            await CargarCombosAsync();
+            cmbProveedor.SelectedItem = nuevo;
         }
-        #endregion
-
-        #region + / - UBICACION
-        private async void BtnAddUbicacion_Click(object sender, RoutedEventArgs e)
+        private async void btnDelProveedor_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbFamilia.SelectedItem is not Familia fam)
-            {
-                MessageBox.Show("Selecciona primero una familia.", "Info",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            var nombre = (Interaction.InputBox("Nombre de la nueva ubicación/producto:",
-                                               "Añadir Ubicación", "") ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(nombre)) return;
-
-            var existe = await _ctx.UbicacionProductos.AnyAsync(u => u.FamiliaId == fam.Id && u.Nombre == nombre);
-            if (existe)
-            {
-                MessageBox.Show("Ya existe una ubicación con ese nombre en esa familia.",
-                    "Duplicado", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var nueva = new UbicacionProducto { Nombre = nombre, FamiliaId = fam.Id };
-            _ctx.UbicacionProductos.Add(nueva);
-            await _ctx.SaveChangesAsync();
-
-            await CargarUbicacionesAsync();
-            cmbUbicacion.SelectedItem = (cmbUbicacion.ItemsSource as System.Collections.Generic.IEnumerable<UbicacionProducto>)?
-                .FirstOrDefault(u => u.Id == nueva.Id);
+            if (cmbProveedor.SelectedItem is Proveedor p) { await _proveedorService.DeleteAsync(p.Id); await CargarCombosAsync(); }
         }
 
-        private async void BtnDelUbicacion_Click(object sender, RoutedEventArgs e)
+        private async void btnAddFamilia_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbUbicacion.SelectedItem is not UbicacionProducto ubi)
+            var txt = Input("Nueva familia", "Nombre:");
+            if (string.IsNullOrWhiteSpace(txt)) return;
+            var nuevo = await _familiaService.CreateAsync(new Familia { Nombre = txt.Trim() });
+            await CargarCombosAsync();
+            cmbFamilia.SelectedItem = nuevo;
+        }
+        private async void btnDelFamilia_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbFamilia.SelectedItem is Familia f) { await _familiaService.DeleteAsync(f.Id); await CargarCombosAsync(); }
+        }
+
+        private async void btnAddUbicacion_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbFamilia.SelectedItem is not Familia f) { MessageBox.Show("Primero selecciona una familia."); return; }
+            var txt = Input("Nueva ubicación", "Nombre:");
+            if (string.IsNullOrWhiteSpace(txt)) return;
+            var nuevo = await _ubicacionService.CreateAsync(new UbicacionProducto { Nombre = txt.Trim(), FamiliaId = f.Id });
+            cmbUbicacion.ItemsSource = await _ubicacionService.GetByFamiliaAsync(f.Id);
+            cmbUbicacion.SelectedItem = nuevo;
+        }
+        private async void btnDelUbicacion_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbUbicacion.SelectedItem is UbicacionProducto u) { await _ubicacionService.DeleteAsync(u.Id); if (cmbFamilia.SelectedItem is Familia f) cmbUbicacion.ItemsSource = await _ubicacionService.GetByFamiliaAsync(f.Id); }
+        }
+
+        private async void btnAddSoporte_Click(object sender, RoutedEventArgs e)
+        {
+            var txt = Input("Nuevo tipo de soporte", "Nombre:");
+            if (string.IsNullOrWhiteSpace(txt)) return;
+            var nuevo = await _tipoSoporteService.CreateAsync(new TipoSoporte { Nombre = txt.Trim() });
+            await CargarCombosAsync();
+            cmbTipoSoporte.SelectedItem = nuevo;
+        }
+        private async void btnDelSoporte_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbTipoSoporte.SelectedItem is TipoSoporte s) { await _tipoSoporteService.DeleteAsync(s.Id); await CargarCombosAsync(); }
+        }
+
+        private async void btnAddRepuestoCat_Click(object sender, RoutedEventArgs e)
+        {
+            var txt = Input("Nuevo repuesto (catálogo)", "Nombre:");
+            if (string.IsNullOrWhiteSpace(txt)) return;
+
+            var nuevo = await _catalogoService.CreateAsync(new RepuestoCatalogo
             {
-                MessageBox.Show("Selecciona una ubicación.", "Info",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
+                Nombre = txt.Trim(),
+                FamiliaId = (cmbFamilia.SelectedItem as Familia)?.Id,
+                UbicacionProductoId = (cmbUbicacion.SelectedItem as UbicacionProducto)?.Id,
+                TipoSoporteId = (cmbTipoSoporte.SelectedItem as TipoSoporte)?.Id
+            });
 
-            var enUso = await _ctx.Repuestos.AnyAsync(r => r.UbicacionProductoId == ubi.Id);
-            if (enUso)
+            cmbRepuestoCat.ItemsSource = await _catalogoService.GetAllAsync();
+            cmbRepuestoCat.SelectedItem = nuevo;
+        }
+        private async void btnDelRepuestoCat_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbRepuestoCat.SelectedItem is RepuestoCatalogo r)
             {
-                MessageBox.Show("No se puede eliminar: la ubicación está en uso por algún repuesto.",
-                    "Operación no permitida", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
+                await _catalogoService.DeleteAsync(r.Id);
+                cmbRepuestoCat.ItemsSource = await _catalogoService.GetAllAsync();
             }
-
-            if (MessageBox.Show($"¿Eliminar ubicación '{ubi.Nombre}'?", "Confirmar",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-
-            _ctx.UbicacionProductos.Remove(ubi);
-            await _ctx.SaveChangesAsync();
-            await CargarUbicacionesAsync();
         }
         #endregion
 
-        #region + / - TIPO SOPORTE
-        private async void BtnAddTipoSoporte_Click(object sender, RoutedEventArgs e)
+        #region Prefijar/Cargar edición (llamados desde CreatePedidoWindow)
+        public void PrefijarCabecera(Familia? fam, UbicacionProducto? ubi, Proveedor? prov, TipoSoporte? sop)
         {
-            var nombre = (Interaction.InputBox("Nombre del tipo de soporte:",
-                                               "Añadir Tipo de Soporte", "") ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(nombre)) return;
-
-            var existe = await _ctx.TipoSoportes.AnyAsync(t => t.Nombre == nombre);
-            if (existe)
-            {
-                MessageBox.Show("Ya existe un tipo de soporte con ese nombre.", "Duplicado",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var nuevo = new TipoSoporte { Nombre = nombre };
-            _ctx.TipoSoportes.Add(nuevo);
-            await _ctx.SaveChangesAsync();
-
-            cmbTipoSoporte.ItemsSource = await _ctx.TipoSoportes.AsNoTracking().OrderBy(t => t.Nombre).ToListAsync();
-            cmbTipoSoporte.SelectedItem = (cmbTipoSoporte.ItemsSource as System.Collections.Generic.IEnumerable<TipoSoporte>)?
-                .FirstOrDefault(t => t.Id == nuevo.Id);
+            if (fam != null) cmbFamilia.SelectedItem = fam;
+            if (ubi != null) cmbUbicacion.SelectedItem = ubi;
+            if (prov != null) cmbProveedor.SelectedItem = prov;
+            if (sop != null) cmbTipoSoporte.SelectedItem = sop;
         }
 
-        private async void BtnDelTipoSoporte_Click(object sender, RoutedEventArgs e)
+        public void CargarParaEdicion(Repuesto rep)
         {
-            if (cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
+            _buffer.Clear();
+            _buffer.Add(rep);
+            _editIndex = 0;
+
+            // Prefija cabecera con los valores del repuesto
+            PrefijarCabecera(rep.Familia, rep.UbicacionProducto, rep.Proveedor, rep.TipoSoporte);
+            // intentar seleccionar en catálogo el mismo nombre
+            if (!string.IsNullOrWhiteSpace(rep.Nombre))
             {
-                MessageBox.Show("Selecciona un tipo de soporte.", "Info",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                cmbRepuestoCat.SelectedItem = null;
+                var lista = cmbRepuestoCat.ItemsSource as System.Collections.IEnumerable;
+                if (lista != null)
+                {
+                    foreach (var it in lista)
+                        if (it is RepuestoCatalogo rc && rc.Nombre.Equals(rep.Nombre, StringComparison.OrdinalIgnoreCase))
+                        { cmbRepuestoCat.SelectedItem = rc; break; }
+                }
             }
-
-            var enUso = await _ctx.Repuestos.AnyAsync(r => r.TipoSoporteId == sop.Id);
-            if (enUso)
-            {
-                MessageBox.Show("No se puede eliminar: hay repuestos asociados a este tipo de soporte.",
-                    "Operación no permitida", MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                return;
-            }
-
-            if (MessageBox.Show($"¿Eliminar tipo de soporte '{sop.Nombre}'?", "Confirmar",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-
-            _ctx.TipoSoportes.Remove(sop);
-            await _ctx.SaveChangesAsync();
-
-            cmbTipoSoporte.ItemsSource = await _ctx.TipoSoportes.AsNoTracking().OrderBy(t => t.Nombre).ToListAsync();
-            cmbTipoSoporte.SelectedIndex = -1;
         }
         #endregion
 
-        #region + / - TIPO REPUESTO (ENUM)
-        private void BtnAddTipoRepuesto_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("El 'Tipo de Repuesto' es un enumerado fijo (Original/Compatible). " +
-                            "No se pueden añadir valores en tiempo de ejecución.",
-                            "Información", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void BtnDelTipoRepuesto_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("El 'Tipo de Repuesto' es un enumerado fijo (Original/Compatible). " +
-                            "No se pueden eliminar valores en tiempo de ejecución.",
-                            "Información", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        #endregion
-
-        #region Agregar / Editar / Actualizar / Eliminar línea
+        #region ABM de líneas locales
         private void BtnAgregarRepuesto_Click(object sender, RoutedEventArgs e)
         {
-            if (!ValidarCabecera(out var fam, out var ubi, out var prov, out var sop, out var tipo))
+            if (ValidarCabecera() is false) return;
+            if (cmbRepuestoCat.SelectedItem is not RepuestoCatalogo rc)
+            {
+                MessageBox.Show("Selecciona un repuesto del catálogo (+ para crear).");
                 return;
-
-            var (cantidad, precio) = ParseCantidadPrecio();
+            }
 
             var nuevo = new Repuesto
             {
-                Nombre = txtNombre.Text?.Trim() ?? "",
+                Nombre = rc.Nombre,
                 Descripcion = "",
-                Cantidad = cantidad,
-                Precio = precio,
-                TipoRepuesto = tipo,
-                FamiliaId = fam.Id,
-                UbicacionProductoId = ubi.Id,
-                ProveedorId = prov.ProveedorId,
-                TipoSoporteId = sop.Id
+                Cantidad = 1,
+                Precio = 0,
+                TipoRepuesto = TipoRepuestoEnum.Original,
+
+                Proveedor = cmbProveedor.SelectedItem as Proveedor ?? throw new InvalidOperationException(),
+                ProveedorId = (cmbProveedor.SelectedItem as Proveedor)!.Id,
+
+                Familia = cmbFamilia.SelectedItem as Familia ?? throw new InvalidOperationException(),
+                FamiliaId = (cmbFamilia.SelectedItem as Familia)!.Id,
+
+                UbicacionProducto = cmbUbicacion.SelectedItem as UbicacionProducto ?? throw new InvalidOperationException(),
+                UbicacionProductoId = (cmbUbicacion.SelectedItem as UbicacionProducto)!.Id,
+
+                TipoSoporte = cmbTipoSoporte.SelectedItem as TipoSoporte ?? throw new InvalidOperationException(),
+                TipoSoporteId = (cmbTipoSoporte.SelectedItem as TipoSoporte)!.Id
             };
 
-            _lineas.Add(nuevo);
-            LimpiarFormulario();
+            _buffer.Add(nuevo);
+            _editIndex = null;
         }
 
         private void BtnEditarRepuesto_Click(object sender, RoutedEventArgs e)
         {
-            if (dgRepuestos.SelectedItem is not Repuesto sel) return;
-            _editIndex = dgRepuestos.SelectedIndex;
+            if (dgTemp.SelectedItem is not Repuesto sel) { MessageBox.Show("Selecciona una línea."); return; }
+            _editIndex = _buffer.IndexOf(sel);
 
-            // Form
-            txtNombre.Text = sel.Nombre;
-            txtPrecio.Text = sel.Precio.ToString();
-            txtCantidad.Text = sel.Cantidad.ToString();
-            cmbTipoRepuesto.SelectedItem = sel.TipoRepuesto;
-
-            cmbFamilia.SelectedItem = (cmbFamilia.ItemsSource as System.Collections.Generic.IEnumerable<Familia>)?
-                .FirstOrDefault(f => f.Id == sel.FamiliaId);
-
-            _ = CargarUbicacionesAsync().ContinueWith(_ =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    cmbUbicacion.SelectedItem = (cmbUbicacion.ItemsSource as System.Collections.Generic.IEnumerable<UbicacionProducto>)?
-                        .FirstOrDefault(u => u.Id == sel.UbicacionProductoId);
-                });
-            });
-
-            cmbProveedor.SelectedItem = (cmbProveedor.ItemsSource as System.Collections.Generic.IEnumerable<Proveedor>)?
-                .FirstOrDefault(p => p.ProveedorId == sel.ProveedorId);
-
-            cmbTipoSoporte.SelectedItem = (cmbTipoSoporte.ItemsSource as System.Collections.Generic.IEnumerable<TipoSoporte>)?
-                .FirstOrDefault(t => t.Id == sel.TipoSoporteId);
-
-            BtnActualizarRepuesto.Visibility = Visibility.Visible;
-            BtnAgregarRepuesto.IsEnabled = false;
-        }
-
-        private void BtnActualizarRepuesto_Click(object sender, RoutedEventArgs e)
-        {
-            if (_editIndex < 0 || _editIndex >= _lineas.Count) return;
-
-            if (!ValidarCabecera(out var fam, out var ubi, out var prov, out var sop, out var tipo))
-                return;
-
-            var (cantidad, precio) = ParseCantidadPrecio();
-
-            var destino = _lineas[_editIndex];
-            destino.Nombre = txtNombre.Text?.Trim() ?? "";
-            destino.Cantidad = cantidad;
-            destino.Precio = precio;
-            destino.TipoRepuesto = tipo;
-            destino.FamiliaId = fam.Id;
-            destino.UbicacionProductoId = ubi.Id;
-            destino.ProveedorId = prov.ProveedorId;
-            destino.TipoSoporteId = sop.Id;
-
-            dgRepuestos.Items.Refresh();
-            ResetEdicion();
+            // Vuelve a prefijar cabecera y catálogo
+            PrefijarCabecera(sel.Familia, sel.UbicacionProducto, sel.Proveedor, sel.TipoSoporte);
+            CargarParaEdicion(sel);
         }
 
         private void BtnEliminarRepuesto_Click(object sender, RoutedEventArgs e)
         {
-            if (dgRepuestos.SelectedItem is not Repuesto sel) return;
-            _lineas.Remove(sel);
-            dgRepuestos.Items.Refresh();
-            ResetEdicion();
+            if (dgTemp.SelectedItem is not Repuesto sel) return;
+            _buffer.Remove(sel);
+            _editIndex = null;
         }
-        #endregion
 
-        #region Aceptar / Cancelar
         private void BtnAceptar_Click(object sender, RoutedEventArgs e)
         {
-            // El padre (CreatePedidoWindow) recogerá RepuestosCreados
             DialogResult = true;
             Close();
         }
 
-        private void BtnCancelar_Click(object sender, RoutedEventArgs e)
+        private bool ValidarCabecera()
         {
-            DialogResult = false;
-            Close();
-        }
-        #endregion
-
-        #region Helpers
-        private bool ValidarCabecera(out Familia fam, out UbicacionProducto ubi,
-                                     out Proveedor prov, out TipoSoporte sop,
-                                     out TipoRepuestoEnum tipo)
-        {
-            fam = default!; ubi = default!; prov = default!; sop = default!; tipo = default;
-
-            if (cmbFamilia.SelectedItem is not Familia f ||
-                cmbUbicacion.SelectedItem is not UbicacionProducto u ||
-                cmbProveedor.SelectedItem is not Proveedor p ||
-                cmbTipoSoporte.SelectedItem is not TipoSoporte s ||
-                cmbTipoRepuesto.SelectedItem is not TipoRepuestoEnum t)
-            {
-                MessageBox.Show("Completa Proveedor, Familia, Ubicación, Tipo de Soporte y Tipo de Repuesto.",
-                    "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-
-            fam = f; ubi = u; prov = p; sop = s; tipo = t;
+            if (cmbFamilia.SelectedItem is not Familia) { MessageBox.Show("Familia requerida."); return false; }
+            if (cmbUbicacion.SelectedItem is not UbicacionProducto) { MessageBox.Show("Ubicación requerida."); return false; }
+            if (cmbProveedor.SelectedItem is not Proveedor) { MessageBox.Show("Proveedor requerido."); return false; }
+            if (cmbTipoSoporte.SelectedItem is not TipoSoporte) { MessageBox.Show("Tipo de soporte requerido."); return false; }
             return true;
-        }
-
-        private (int cantidad, decimal precio) ParseCantidadPrecio()
-        {
-            if (!int.TryParse(txtCantidad.Text, out var cantidad) || cantidad <= 0) cantidad = 1;
-            if (!decimal.TryParse(txtPrecio.Text, out var precio) || precio < 0) precio = 0m;
-            return (cantidad, precio);
-        }
-
-        private void LimpiarFormulario()
-        {
-            txtNombre.Clear();
-            txtPrecio.Clear();
-            txtCantidad.Clear();
-            cmbTipoRepuesto.SelectedIndex = -1;
-        }
-
-        private void ResetEdicion()
-        {
-            _editIndex = -1;
-            BtnActualizarRepuesto.Visibility = Visibility.Collapsed;
-            BtnAgregarRepuesto.IsEnabled = true;
-            LimpiarFormulario();
         }
         #endregion
     }

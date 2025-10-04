@@ -10,157 +10,171 @@ namespace GestorStock.API.Views
 {
     public partial class CreatePedidoWindow : Window
     {
-        private readonly IPedidoService _pedidos;
-        private readonly IRepuestoService _repuestos;
-        private readonly IFamiliaService _familias;
-        private readonly IUbicacionProductoService _ubicaciones;
-        private readonly IProveedorService _proveedores;
-        private readonly ITipoSoporteService _tiposSoporte;
+        private readonly IPedidoService _pedidoService;
+        private readonly IFamiliaService _familiaService;
+        private readonly ITipoSoporteService _tipoSoporteService;
+        private readonly IProveedorService _proveedorService;
+        private readonly IUbicacionProductoService _ubicacionProductoService;
+        private readonly IRepuestoCatalogoService _catalogoService;
         private readonly IServiceProvider _sp;
 
-        // Se asigna desde MainWindow (opción A)
-        public Pedido? PedidoEditar { get; set; }
-
         private readonly ObservableCollection<Repuesto> _detalle = new();
+        private Pedido? _pedidoEditar;
 
-        public CreatePedidoWindow(IPedidoService pedidos,
-                                  IRepuestoService repuestos,
-                                  IFamiliaService familias,
-                                  ITipoSoporteService tiposSoporte,
-                                  IProveedorService proveedores,
-                                  IUbicacionProductoService ubicaciones,
-                                  IServiceProvider sp)
+        public CreatePedidoWindow(
+            IPedidoService pedidoService,
+            IFamiliaService familiaService,
+            ITipoSoporteService tipoSoporteService,
+            IProveedorService proveedorService,
+            IUbicacionProductoService ubicacionProductoService,
+            IRepuestoCatalogoService catalogoService,
+            IServiceProvider sp,
+            Pedido? pedidoAEditar = null)
         {
             InitializeComponent();
-            _pedidos = pedidos; _repuestos = repuestos; _familias = familias;
-            _tiposSoporte = tiposSoporte; _proveedores = proveedores; _ubicaciones = ubicaciones;
+
+            _pedidoService = pedidoService;
+            _familiaService = familiaService;
+            _tipoSoporteService = tipoSoporteService;
+            _proveedorService = proveedorService;
+            _ubicacionProductoService = ubicacionProductoService;
+            _catalogoService = catalogoService;
             _sp = sp;
+            _pedidoEditar = pedidoAEditar;
 
             dgRepuestos.ItemsSource = _detalle;
-            Loaded += CreatePedidoWindow_Loaded;
+
+            Loaded += async (_, __) => await CreatePedidoWindow_Loaded();
         }
 
-        private async void CreatePedidoWindow_Loaded(object sender, RoutedEventArgs e)
+        private async Task CreatePedidoWindow_Loaded()
         {
-            // Cargar combos de cabecera
-            cmbFamilia.ItemsSource = await _familias.GetAllAsync();
-            cmbProveedor.ItemsSource = await _proveedores.GetAllAsync();
-            cmbTipoSoporte.ItemsSource = await _tiposSoporte.GetAllAsync();
+            cmbFamilia.ItemsSource = await _familiaService.GetAllAsync();
+            cmbTipoSoporte.ItemsSource = await _tipoSoporteService.GetAllAsync();
+            cmbProveedor.ItemsSource = await _proveedorService.GetAllAsync();
 
-            if (PedidoEditar != null)
+            if (_pedidoEditar != null)
             {
-                // Seleccionar familia del pedido
-                var familias = (cmbFamilia.ItemsSource as System.Collections.Generic.IEnumerable<Familia>)!;
-                cmbFamilia.SelectedItem = familias.FirstOrDefault(f => f.Id == PedidoEditar.FamiliaId);
-
-                // Cargar ubicaciones según familia seleccionada
-                await CargarUbicacionesAsync();
-
-                // Cargar detalle desde BD (por si viene desactualizado en memoria)
-                var ped = await _pedidos.GetWithDetalleAsync(PedidoEditar.Id);
-                _detalle.Clear();
-                if (ped?.Repuestos != null)
+                // Cabecera según el primer detalle (tu entidad Pedido tiene FamiliaId obligatorio)
+                var fam = (_pedidoEditar.FamiliaId > 0) ? (await _familiaService.GetAllAsync())
+                             .FirstOrDefault(f => f.Id == _pedidoEditar.FamiliaId) : null;
+                if (fam != null)
                 {
-                    foreach (var r in ped.Repuestos)
-                        _detalle.Add(r);
+                    cmbFamilia.SelectedItem = fam;
+                    cmbUbicacion.ItemsSource = await _ubicacionProductoService.GetByFamiliaAsync(fam.Id);
                 }
+
+                // Rellenar detalle
+                foreach (var r in _pedidoEditar.Repuestos)
+                    _detalle.Add(r);
             }
         }
 
-        private async Task CargarUbicacionesAsync()
+        private async void cmbFamilia_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            cmbUbicacion.ItemsSource = null;
-            if (cmbFamilia.SelectedItem is Familia f)
-                cmbUbicacion.ItemsSource = await _ubicaciones.GetByFamiliaAsync(f.Id);
+            if (cmbFamilia.SelectedItem is Familia fam)
+                cmbUbicacion.ItemsSource = await _ubicacionProductoService.GetByFamiliaAsync(fam.Id);
+            else
+                cmbUbicacion.ItemsSource = null;
         }
 
-        private async void cmbFamilia_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-            => await CargarUbicacionesAsync();
-
+        // ====== Botonera detalle ======
         private void BtnAgregarLinea_Click(object sender, RoutedEventArgs e)
         {
             var win = _sp.GetRequiredService<AddItemWindow>();
             win.Owner = this;
 
-            if (win.ShowDialog() == true && win.RepuestoCreado != null)
-            {
-                // Alinear con cabecera si corresponde
-                if (cmbFamilia.SelectedItem is Familia fam) win.RepuestoCreado.FamiliaId = fam.Id;
-                if (cmbUbicacion.SelectedItem is UbicacionProducto ubi) win.RepuestoCreado.UbicacionProductoId = ubi.Id;
+            // prefijar cabecera
+            win.PrefijarCabecera(
+                cmbFamilia.SelectedItem as Familia,
+                cmbUbicacion.SelectedItem as UbicacionProducto,
+                cmbProveedor.SelectedItem as Proveedor,
+                cmbTipoSoporte.SelectedItem as TipoSoporte);
 
-                _detalle.Add(win.RepuestoCreado);
+            if (win.ShowDialog() == true && win.RepuestosCreados.Count > 0)
+            {
+                foreach (var r in win.RepuestosCreados)
+                {
+                    // fuerza coherencia con la cabecera
+                    if (cmbFamilia.SelectedItem is Familia f) { r.FamiliaId = f.Id; r.Familia = f; }
+                    if (cmbUbicacion.SelectedItem is UbicacionProducto u) { r.UbicacionProductoId = u.Id; r.UbicacionProducto = u; }
+                    if (cmbProveedor.SelectedItem is Proveedor p) { r.ProveedorId = p.Id; r.Proveedor = p; }
+                    if (cmbTipoSoporte.SelectedItem is TipoSoporte s) { r.TipoSoporteId = s.Id; r.TipoSoporte = s; }
+
+                    _detalle.Add(r);
+                }
+            }
+        }
+
+        private void BtnEditarLinea_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgRepuestos.SelectedItem is not Repuesto sel) { MessageBox.Show("Selecciona una línea."); return; }
+
+            var win = _sp.GetRequiredService<AddItemWindow>();
+            win.Owner = this;
+
+            // Prefija cabecera actual
+            win.PrefijarCabecera(
+                cmbFamilia.SelectedItem as Familia,
+                cmbUbicacion.SelectedItem as UbicacionProducto,
+                cmbProveedor.SelectedItem as Proveedor,
+                cmbTipoSoporte.SelectedItem as TipoSoporte);
+
+            // Carga el repuesto seleccionado
+            win.CargarParaEdicion(sel);
+
+            if (win.ShowDialog() == true && win.RepuestosCreados.Count == 1)
+            {
+                var editado = win.RepuestosCreados.First();
+                var idx = _detalle.IndexOf(sel);
+                if (idx >= 0) _detalle[idx] = editado;
             }
         }
 
         private void BtnQuitarLinea_Click(object sender, RoutedEventArgs e)
         {
-            if (dgRepuestos.SelectedItem is Repuesto sel)
-                _detalle.Remove(sel);
+            if (dgRepuestos.SelectedItem is Repuesto sel) _detalle.Remove(sel);
         }
 
+        // ====== Guardar ======
         private async void BtnGuardar_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbFamilia.SelectedItem is not Familia fam ||
-                cmbUbicacion.SelectedItem is not UbicacionProducto ubi ||
-                cmbProveedor.SelectedItem is not Proveedor prov ||
-                cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
+            if (cmbFamilia.SelectedItem is not Familia fam
+                || cmbUbicacion.SelectedItem is not UbicacionProducto ubi
+                || cmbProveedor.SelectedItem is not Proveedor prov
+                || cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
             {
-                MessageBox.Show("Completa la cabecera del pedido.", "Validación",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Completa la cabecera del pedido.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (PedidoEditar == null)
+            // Asigna cabecera a todas las líneas
+            foreach (var r in _detalle)
             {
-                // Crear
+                r.FamiliaId = fam.Id; r.Familia = fam;
+                r.UbicacionProductoId = ubi.Id; r.UbicacionProducto = ubi;
+                r.ProveedorId = prov.Id; r.Proveedor = prov;
+                r.TipoSoporteId = sop.Id; r.TipoSoporte = sop;
+            }
+
+            if (_pedidoEditar == null)
+            {
                 var nuevo = new Pedido
                 {
                     FechaCreacion = System.DateTime.Now,
+                    Descripcion = "Pedido creado desde CreatePedidoWindow",
                     FamiliaId = fam.Id,
-                    Descripcion = "Pedido creado desde CreatePedidoWindow"
+                    Familia = fam,
+                    Repuestos = _detalle.ToList()
                 };
-
-                foreach (var r in _detalle)
-                {
-                    r.FamiliaId = fam.Id;
-                    if (r.UbicacionProductoId == 0) r.UbicacionProductoId = ubi.Id;
-                    if (r.ProveedorId == 0) r.ProveedorId = prov.ProveedorId;
-                    if (r.TipoSoporteId == 0) r.TipoSoporteId = sop.Id;
-                }
-
-                nuevo.Repuestos = _detalle.ToList();
-                await _pedidos.AddAsync(nuevo);
+                await _pedidoService.CreateAsync(nuevo);
             }
             else
             {
-                // Editar: sincroniza detalle de forma simple
-                var ped = await _pedidos.GetWithDetalleAsync(PedidoEditar.Id);
-                if (ped == null)
-                {
-                    MessageBox.Show("No se encontró el pedido.", "Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                ped.FamiliaId = fam.Id;
-
-                // Borra líneas existentes y vuelve a insertar
-                var existentes = ped.Repuestos?.ToList() ?? new();
-                foreach (var r in existentes)
-                    await _repuestos.DeleteAsync(r.Id);
-
-                foreach (var r in _detalle)
-                {
-                    r.PedidoId = ped.Id;
-                    r.FamiliaId = fam.Id;
-                    if (r.UbicacionProductoId == 0) r.UbicacionProductoId = ubi.Id;
-                    if (r.ProveedorId == 0) r.ProveedorId = prov.ProveedorId;
-                    if (r.TipoSoporteId == 0) r.TipoSoporteId = sop.Id;
-
-                    await _repuestos.AddAsync(r);
-                }
-
-                await _pedidos.UpdateAsync(ped);
+                _pedidoEditar.FamiliaId = fam.Id;
+                _pedidoEditar.Familia = fam;
+                _pedidoEditar.Repuestos = _detalle.ToList();
+                await _pedidoService.UpdateAsync(_pedidoEditar);
             }
 
             DialogResult = true;

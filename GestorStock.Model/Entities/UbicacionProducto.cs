@@ -6,8 +6,7 @@
         public string Nombre { get; set; } = string.Empty;
 
         public int FamiliaId { get; set; }
-        public Familia Familia { get; set; } = null!;
-
+        public Familia? Familia { get; set; }
         public ICollection<Repuesto> Repuestos { get; set; } = new List<Repuesto>();
     }
 }

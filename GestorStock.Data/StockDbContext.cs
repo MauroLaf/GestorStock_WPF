@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
 using GestorStock.Model.Entities;
 using GestorStock.Model.Enum;
 
@@ -14,6 +15,7 @@ namespace GestorStock.Data
         public DbSet<Proveedor> Proveedores => Set<Proveedor>();
         public DbSet<UbicacionProducto> UbicacionProductos => Set<UbicacionProducto>();
         public DbSet<TipoSoporte> TipoSoportes => Set<TipoSoporte>();
+        public DbSet<RepuestoCatalogo> RepuestoCatalogos => Set<RepuestoCatalogo>(); // <- nombre consistente
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,16 +27,16 @@ namespace GestorStock.Data
                 e.HasKey(p => p.Id);
 
                 e.HasOne(p => p.Familia)
-                 .WithMany(f => f.Pedidos)       // 1 Familia -> N Pedidos
+                 .WithMany(f => f.Pedidos)              // 1 Familia -> N Pedidos
                  .HasForeignKey(p => p.FamiliaId)
                  .IsRequired()
-                 .OnDelete(DeleteBehavior.Restrict); // impide borrar una Familia con pedidos
+                 .OnDelete(DeleteBehavior.Restrict);    // impide borrar familia con pedidos
 
                 e.HasMany(p => p.Repuestos)
                  .WithOne(r => r.Pedido)
                  .HasForeignKey(r => r.PedidoId)
                  .IsRequired()
-                 .OnDelete(DeleteBehavior.Cascade);  // borrar Pedido borra sus Repuestos
+                 .OnDelete(DeleteBehavior.Cascade);     // borrar Pedido borra Repuestos
             });
 
             // ===== Repuesto =====
@@ -42,7 +44,6 @@ namespace GestorStock.Data
             {
                 e.HasKey(r => r.Id);
 
-                // (Opcionales de calidad)
                 e.Property(r => r.Nombre).IsRequired();
                 e.Property(r => r.Precio).HasColumnType("decimal(18,2)");
 
@@ -56,48 +57,52 @@ namespace GestorStock.Data
                  .HasForeignKey(r => r.UbicacionProductoId)
                  .OnDelete(DeleteBehavior.Restrict);
 
+                // Tu clase Proveedor no tiene colección de Repuestos, por eso usamos .WithMany() sin lambda
                 e.HasOne(r => r.Proveedor)
-                 .WithMany(pv => pv.Repuestos)
+                 .WithMany()
                  .HasForeignKey(r => r.ProveedorId)
                  .OnDelete(DeleteBehavior.Restrict);
 
-                // TipoSoporte OBLIGATORIO por línea (como pediste)
                 e.HasOne(r => r.TipoSoporte)
                  .WithMany(ts => ts.Repuestos)
                  .HasForeignKey(r => r.TipoSoporteId)
                  .OnDelete(DeleteBehavior.Restrict);
             });
 
-                       // ================== SEEDING ==================
-            // 1) Proveedor demo
-            modelBuilder.Entity<Proveedor>().HasData(
-                new Proveedor { ProveedorId = 1, Nombre = "Proveedor Demo" }
-            );
+            // ===== UbicacionProducto -> Familia =====
+            modelBuilder.Entity<UbicacionProducto>(e =>
+            {
+                e.HasKey(u => u.Id);
 
-            // 2) Pedido demo (usa una fecha fija para evitar difs futuras de migración)
-            modelBuilder.Entity<Pedido>().HasData(
-                new Pedido { Id = 1, FechaCreacion = new DateTime(2025, 10, 04), FamiliaId = 1, Descripcion = "Pedido demo" }
-            );
+                e.HasOne(u => u.Familia)
+                 .WithMany(f => f.Ubicaciones)
+                 .HasForeignKey(u => u.FamiliaId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            // 3) Repuesto demo con FKs válidas y coherentes (UbicacionProductoId=5 es de FamiliaId=1)
-            modelBuilder.Entity<Repuesto>().HasData(
-                new Repuesto
-                {
-                    Id = 1,
-                    Nombre = "Repuesto Demo",
-                    Descripcion = "",
-                    Cantidad = 1,
-                    Precio = 0m,
-                    TipoRepuesto = TipoRepuestoEnum.Original,          // el enum que uses
-                    FamiliaId = 1,
-                    UbicacionProductoId = 5,
-                    ProveedorId = 1,
-                    TipoSoporteId = 1,
-                    PedidoId = 1
-                }
-            );
+            // ===== RepuestoCatalogo (FKs opcionales) =====
+            modelBuilder.Entity<RepuestoCatalogo>(e =>
+            {
+                e.HasKey(rc => rc.Id);
 
+                e.HasOne(rc => rc.Familia)
+                  .WithMany(f => f.Catalogo)
+                  .HasForeignKey(rc => rc.FamiliaId)
+                  .OnDelete(DeleteBehavior.Restrict);
 
+                e.HasOne(rc => rc.UbicacionProducto)
+                  .WithMany()
+                  .HasForeignKey(rc => rc.UbicacionProductoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasOne(rc => rc.TipoSoporte)
+                  .WithMany()
+                  .HasForeignKey(rc => rc.TipoSoporteId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ================== SEEDING ==================
+            // Familias
             modelBuilder.Entity<Familia>().HasData(
                 new Familia { Id = 1, Nombre = "INTERCAMBIADORES" },
                 new Familia { Id = 2, Nombre = "MERCADOS" },
@@ -105,6 +110,7 @@ namespace GestorStock.Data
                 new Familia { Id = 4, Nombre = "EXPLOTACIONES" }
             );
 
+            // TipoSoportes
             modelBuilder.Entity<TipoSoporte>().HasData(
                 new TipoSoporte { Id = 1, Nombre = "Pantalla LED" },
                 new TipoSoporte { Id = 2, Nombre = "Mupis Digital" },
@@ -112,6 +118,12 @@ namespace GestorStock.Data
                 new TipoSoporte { Id = 4, Nombre = "Skyled" }
             );
 
+            // Proveedor demo
+            modelBuilder.Entity<Proveedor>().HasData(
+                new Proveedor { Id = 1, Nombre = "Proveedor Demo" } // <- propiedad correcta es Id
+            );
+
+            // Ubicaciones (extracto, deja las que pasaste)
             modelBuilder.Entity<UbicacionProducto>().HasData(
                 // INTERCAMBIADORES (FamiliaId = 1)
                 new UbicacionProducto { Id = 5, Nombre = "Skyled moncloa", FamiliaId = 1 },
@@ -168,6 +180,36 @@ namespace GestorStock.Data
                 new UbicacionProducto { Id = 4, Nombre = "Skyled granada (cc granaita)", FamiliaId = 4 },
                 new UbicacionProducto { Id = 8, Nombre = "Skyled valencia", FamiliaId = 4 },
                 new UbicacionProducto { Id = 9, Nombre = "Skyled valladolid (cc vallsur)", FamiliaId = 4 }
+            );
+
+            // Pedido demo (usa fecha fija para estabilidad de migraciones)
+            modelBuilder.Entity<Pedido>().HasData(
+                new Pedido
+                {
+                    Id = 1,
+                    FechaCreacion = new DateTime(2025, 10, 4),
+                    FamiliaId = 1,
+                    Descripcion = "Pedido demo",
+                    Incidencia = false
+                }
+            );
+
+            // Repuesto demo con FKs válidas
+            modelBuilder.Entity<Repuesto>().HasData(
+                new
+                {
+                    Id = 1,
+                    Nombre = "Repuesto Demo",
+                    Descripcion = "",
+                    Cantidad = 1,
+                    Precio = 0m,
+                    TipoRepuesto = (int)TipoRepuestoEnum.Original, // los enums en seeding van como int
+                    FamiliaId = 1,
+                    UbicacionProductoId = 5,
+                    ProveedorId = 1,
+                    TipoSoporteId = 1,
+                    PedidoId = 1
+                }
             );
         }
     }

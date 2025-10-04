@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Windows;
-using GestorStock.Data;
-using GestorStock.Services.Implementations;
-using GestorStock.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using GestorStock.Data;
+using GestorStock.Services.Interfaces;
+using GestorStock.Services.Implementations;
+using GestorStock.API.Views;
+using System.Runtime.Versioning;
 
 namespace GestorStock.API
 {
+    [SupportedOSPlatform("windows")]
     public partial class App : Application
     {
         public static IServiceProvider Services { get; private set; } = default!;
@@ -29,19 +33,23 @@ namespace GestorStock.API
 
             sc.AddDbContext<StockDbContext>(o => o.UseMySql(cs, ServerVersion.AutoDetect(cs)));
 
-            // Servicios
+            // Servicios (como ya los tenías)
             sc.AddScoped<IFamiliaService, FamiliaService>();
             sc.AddScoped<IUbicacionProductoService, UbicacionProductoService>();
             sc.AddScoped<IProveedorService, ProveedorService>();
             sc.AddScoped<ITipoSoporteService, TipoSoporteService>();
-            sc.AddScoped<ITipoRepuestoService, TipoRepuestoService>();
             sc.AddScoped<IPedidoService, PedidoService>();
             sc.AddScoped<IRepuestoService, RepuestoService>();
+
+            // Nuevo: catálogo de repuestos
+            sc.AddScoped<IRepuestoCatalogoService, RepuestoCatalogoService>();
 
             // Ventanas
             sc.AddTransient<Views.MainWindow>();
             sc.AddTransient<Views.CreatePedidoWindow>();
             sc.AddTransient<Views.AddItemWindow>();
+            sc.AddScoped<IRepuestoCatalogoService, RepuestoCatalogoService>();
+
 
             Services = sc.BuildServiceProvider();
 

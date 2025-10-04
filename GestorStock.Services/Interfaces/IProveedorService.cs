@@ -1,6 +1,14 @@
-﻿using GestorStock.Model.Entities;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using GestorStock.Model.Entities;
 
 namespace GestorStock.Services.Interfaces
 {
-    public interface IProveedorService : ICrudService<Proveedor, int> { }
+    public interface IProveedorService
+    {
+        Task<List<Proveedor>> GetAllAsync();
+        Task<Proveedor?> GetByIdAsync(int id);
+        Task<Proveedor> CreateAsync(Proveedor entity); // <- para botón +
+        Task<bool> DeleteAsync(int id);
+    }
 }

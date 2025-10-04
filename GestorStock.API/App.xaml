@@ -1,23 +1,16 @@
 ﻿<Application x:Class="GestorStock.API.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:GestorStock.API">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <!-- Si tienes un diccionario externo, descomenta esta línea:
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="ModernStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-            -->
 
-            <!-- Estilo global para todas las ventanas -->
+            <!-- Estilo global -->
             <Style TargetType="Window">
-                <Setter Property="Icon" Value="Assets/stock.ico"/>
-                <!-- Fondo marrón claro global -->
+                <!-- pack URI robusto: siempre encuentra /Assets/stock.ico en tu ensamblado -->
+                <Setter Property="Icon" Value="pack://application:,,,/GestorStock.API;component/Assets/stock.ico"/>
                 <Setter Property="Background" Value="#E8D999"/>
             </Style>
 
-            <!-- Grid marrón claro global -->
             <Style TargetType="Grid">
                 <Setter Property="Background" Value="#E8D999"/>
             </Style>

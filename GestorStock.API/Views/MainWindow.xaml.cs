@@ -1,6 +1,5 @@
 ﻿using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
-using Microsoft.Win32;
 using OfficeOpenXml;
 using System;
 using System.Collections.ObjectModel;
@@ -10,7 +9,8 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Extensions.DependencyInjection; // GetRequiredService
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace GestorStock.API.Views
 {
@@ -21,16 +21,23 @@ namespace GestorStock.API.Views
         private readonly ITipoSoporteService _tipoSoporteService;
         private readonly IPedidoService _pedidoService;
         private readonly IRepuestoService _repuestoService;
-        private readonly IServiceProvider _sp;   // Resolver ventanas por DI (opción A)
+        private readonly IProveedorService _proveedorService;
+        private readonly IUbicacionProductoService _ubicacionProductoService;
+        private readonly IServiceProvider _sp;
+        private readonly IRepuestoCatalogoService _catalogoService;
+
 
         private readonly ObservableCollection<Pedido> _pedidos = new();
-        private bool _isExporting = false;
+        private bool _isExporting;
 
         public MainWindow(
             IPedidoService pedidoService,
             IRepuestoService repuestoService,
             IFamiliaService familiaService,
             ITipoSoporteService tipoSoporteService,
+            IProveedorService proveedorService,
+            IUbicacionProductoService ubicacionProductoService,
+            IRepuestoCatalogoService catalogoService,   // <-- NUEVO
             IServiceProvider sp)
         {
             InitializeComponent();
@@ -39,22 +46,27 @@ namespace GestorStock.API.Views
             _repuestoService = repuestoService;
             _familiaService = familiaService;
             _tipoSoporteService = tipoSoporteService;
+            _proveedorService = proveedorService;
+            _ubicacionProductoService = ubicacionProductoService;
+            _catalogoService = catalogoService;
             _sp = sp;
 
             PedidosDataGrid.ItemsSource = _pedidos;
 
             Loaded += MainWindow_Loaded;
-
             CreateButton.Click += CreateButton_Click;
             EditButton.Click += EditButton_Click;
             DeleteButton.Click += DeleteButton_Click;
             BuscarButton.Click += BuscarButton_Click;
             LimpiarButton.Click += LimpiarButton_Click;
-            PedidosDataGrid.SelectionChanged += PedidosDataGrid_SelectionChanged;
             ExportarExcelButton.Click += ExportarExcelButton_Click;
+
+            // Formato de fechas y estilo vencido
+            PedidosDataGrid.AutoGeneratingColumn += PedidosDataGrid_AutoGeneratingColumn;
+            PedidosDataGrid.LoadingRow += PedidosDataGrid_LoadingRow;
         }
 
-        private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await CargarFamiliasAsync();
             await CargarTiposSoporteAsync();
@@ -72,7 +84,7 @@ namespace GestorStock.API.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al cargar las Familias: {ex.Message}", "Error",
+                MessageBox.Show($"Error al cargar Familias: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -88,12 +100,11 @@ namespace GestorStock.API.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al cargar los tipos de soporte: {ex.Message}", "Error",
+                MessageBox.Show($"Error al cargar Tipos de Soporte: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        // === ÚNICA definición de este método (evita duplicados) ===
         private async Task CargarTodosLosPedidosAsync()
         {
             try
@@ -104,7 +115,7 @@ namespace GestorStock.API.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al cargar los pedidos: {ex.Message}", "Error",
+                MessageBox.Show($"Error al cargar pedidos: {ex.Message}", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -113,16 +124,16 @@ namespace GestorStock.API.Views
         {
             await CargarTodosLosPedidosAsync();
 
-            var famSel = FamiliaComboBox.SelectedItem as Model.Entities.Familia;
-            var sopSel = TipoSoporteComboBox.SelectedItem as Model.Entities.TipoSoporte;
+            var fam = FamiliaComboBox.SelectedItem as Familia;
+            var sop = TipoSoporteComboBox.SelectedItem as TipoSoporte;
 
-            var resultados = _pedidos.Where(p =>
-                (famSel == null || p.Repuestos.Any(r => r.UbicacionProducto?.FamiliaId == famSel.Id)) &&
-                (sopSel == null || p.Repuestos.Any(r => r.TipoSoporteId == sopSel.Id))
+            var filtrados = _pedidos.Where(p =>
+                (fam == null || p.Repuestos.Any(r => r.UbicacionProducto?.FamiliaId == fam.Id)) &&
+                (sop == null || p.Repuestos.Any(r => r.TipoSoporteId == sop.Id))
             ).ToList();
 
             _pedidos.Clear();
-            foreach (var p in resultados) _pedidos.Add(p);
+            foreach (var p in filtrados) _pedidos.Add(p);
         }
 
         private async void LimpiarButton_Click(object sender, RoutedEventArgs e)
@@ -132,119 +143,118 @@ namespace GestorStock.API.Views
             await CargarTodosLosPedidosAsync();
         }
 
-        // === Crear ===
+        // === CREAR ===
         private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
-            var win = _sp.GetRequiredService<CreatePedidoWindow>();
-            win.Owner = this;
+            var win = new CreatePedidoWindow(
+                _pedidoService,            // 1
+                _familiaService,           // 2
+                _tipoSoporteService,       // 3
+                _proveedorService,         // 4
+                _ubicacionProductoService, // 5
+                _catalogoService,          // 6
+                _sp,                       // 7
+                null                       // 8
+            );
 
+            win.Owner = this;
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
 
-        // === Editar ===
+        // === EDITAR ===
         private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PedidosDataGrid.SelectedItem is not Pedido sel)
+            if (PedidosDataGrid.SelectedItem is not Pedido seleccionado)
             {
                 MessageBox.Show("Selecciona un pedido.", "Info",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            var pedidoCompleto = await _pedidoService.GetWithDetalleAsync(sel.Id);
-            if (pedidoCompleto == null)
+            var pedidoCompleto = await _pedidoService.GetWithDetalleAsync(seleccionado.Id);
+            if (pedidoCompleto is null)
             {
                 MessageBox.Show("No se pudo cargar el pedido.", "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            var win = _sp.GetRequiredService<CreatePedidoWindow>();
-            win.Owner = this;
-            win.PedidoEditar = pedidoCompleto;   // <- propiedad en CreatePedidoWindow (ver punto 2)
+            var win = new CreatePedidoWindow(
+                _pedidoService,            // 1
+                _familiaService,           // 2
+                _tipoSoporteService,       // 3
+                _proveedorService,         // 4
+                _ubicacionProductoService, // 5
+                _catalogoService,          // 6
+                _sp,                       // 7
+                pedidoCompleto             // 8
+            );
 
+            win.Owner = this;
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
 
-        // === Eliminar Pedido ===
+
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PedidosDataGrid.SelectedItem is not Pedido sel) return;
+            if (PedidosDataGrid.SelectedItem is not Pedido seleccionado) return;
 
-            if (MessageBox.Show("¿Eliminar este pedido?", "Confirmar",
-                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (MessageBox.Show("¿Eliminar el pedido seleccionado?",
+                "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
-                await _pedidoService.DeleteAsync(sel.Id);
+                await _pedidoService.DeleteAsync(seleccionado.Id);
                 await CargarTodosLosPedidosAsync();
             }
         }
 
-        // === Eliminar Repuesto (fila detalle) ===
         private async void EliminarRepuesto_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is int repuestoId)
             {
                 if (MessageBox.Show("¿Eliminar este repuesto?", "Confirmar",
-                    MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-
-                try
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     await _repuestoService.DeleteAsync(repuestoId);
                     await CargarTodosLosPedidosAsync();
-                    MessageBox.Show("Repuesto eliminado.", "OK",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString(), "Error eliminando repuesto");
                 }
             }
         }
 
-        private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
-
-        // === Exportar a Excel (EPPlus 8) ===
+        // === Exportar Excel con EPPlus 8 ===
         private void ExportarExcelButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isExporting) return;
-
             _isExporting = true;
             ExportarExcelButton.IsEnabled = false;
 
             try
             {
-                var dlg = new SaveFileDialog
+                var dlg = new Microsoft.Win32.SaveFileDialog
                 {
-                    Title = "Exportar pedidos",
-                    Filter = "Excel (*.xlsx)|*.xlsx",
+                    Filter = "Archivo de Excel (*.xlsx)|*.xlsx",
                     FileName = "Pedidos.xlsx",
-                    AddExtension = true,
-                    DefaultExt = ".xlsx",
-                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                    OverwritePrompt = true
                 };
 
                 if (dlg.ShowDialog() != true) return;
 
-                // EPPlus 8+: configure licencia ANTES de instanciar ExcelPackage
-                // Elige una de estas dos:
-                // ExcelPackage.License.SetNonCommercialPersonal(Environment.UserName);
-                ExcelPackage.License.SetNonCommercialOrganization("GestorStock");
+                var file = new FileInfo(dlg.FileName);
+                using var package = new ExcelPackage(file);
 
-                using var package = new ExcelPackage(new FileInfo(dlg.FileName));
-                var sheetName = "Pedidos_Unificado";
-                var ws = package.Workbook.Worksheets.FirstOrDefault(x => x.Name == sheetName)
-                         ?? package.Workbook.Worksheets.Add(sheetName);
-
+                var name = "Pedidos";
+                var ws = package.Workbook.Worksheets.FirstOrDefault(w => w.Name == name)
+                         ?? package.Workbook.Worksheets.Add(name);
                 ws.Cells.Clear();
 
                 string[] headers = {
-                    "ID Pedido","Fecha Creación","Descripción Pedido","Incidencia","Fecha Incidencia",
-                    "Fecha Llegada","Descripción Incidencia","Ubicación","Tipo Soporte","Familia",
-                    "ID Repuesto","Nombre Repuesto","Cantidad","Descripción Repuesto","Precio","Tipo Repuesto"
+                    "ID Pedido","Fecha Creación","Descripción","Incidencia","Fecha Incidencia","Fecha Llegada",
+                    "Ubicación","Familia","Tipo Soporte",
+                    "ID Repuesto","Nombre","Cantidad","Precio","Total Línea"
                 };
-                for (int i = 0; i < headers.Length; i++) ws.Cells[1, i + 1].Value = headers[i];
+
+                for (int c = 0; c < headers.Length; c++) ws.Cells[1, c + 1].Value = headers[c];
 
                 int row = 2;
                 foreach (var p in _pedidos)
@@ -252,55 +262,82 @@ namespace GestorStock.API.Views
                     if (p.Repuestos == null || !p.Repuestos.Any())
                     {
                         ws.Cells[row, 1].Value = p.Id;
-                        ws.Cells[row, 2].Value = p.FechaCreacion; ws.Cells[row, 2].Style.Numberformat.Format = "dd/MM/yyyy";
+                        ws.Cells[row, 2].Value = p.FechaCreacion;
                         ws.Cells[row, 3].Value = p.Descripcion;
                         ws.Cells[row, 4].Value = p.Incidencia;
-                        ws.Cells[row, 5].Value = p.FechaIncidencia; ws.Cells[row, 5].Style.Numberformat.Format = "dd/MM/yyyy";
-                        ws.Cells[row, 6].Value = p.FechaLlegada; ws.Cells[row, 6].Style.Numberformat.Format = "dd/MM/yyyy";
-                        ws.Cells[row, 7].Value = p.DescripcionIncidencia;
+                        ws.Cells[row, 6].Value = p.FechaLlegada;
                         row++;
+                        continue;
                     }
-                    else
+
+                    foreach (var r in p.Repuestos)
                     {
-                        foreach (var r in p.Repuestos)
-                        {
-                            ws.Cells[row, 1].Value = p.Id;
-                            ws.Cells[row, 2].Value = p.FechaCreacion; ws.Cells[row, 2].Style.Numberformat.Format = "dd/MM/yyyy";
-                            ws.Cells[row, 3].Value = p.Descripcion;
-                            ws.Cells[row, 4].Value = p.Incidencia;
-                            ws.Cells[row, 5].Value = p.FechaIncidencia; ws.Cells[row, 5].Style.Numberformat.Format = "dd/MM/yyyy";
-                            ws.Cells[row, 6].Value = p.FechaLlegada; ws.Cells[row, 6].Style.Numberformat.Format = "dd/MM/yyyy";
-                            ws.Cells[row, 7].Value = p.DescripcionIncidencia;
+                        ws.Cells[row, 1].Value = p.Id;
+                        ws.Cells[row, 2].Value = p.FechaCreacion;
+                        ws.Cells[row, 3].Value = p.Descripcion;
+                        ws.Cells[row, 4].Value = p.Incidencia;
+                        ws.Cells[row, 5].Value = p.FechaIncidencia;
+                        ws.Cells[row, 6].Value = p.FechaLlegada;
+                        ws.Cells[row, 7].Value = r.UbicacionProducto?.Nombre;
+                        ws.Cells[row, 8].Value = r.UbicacionProducto?.Familia?.Nombre;
+                        ws.Cells[row, 9].Value = r.TipoSoporte?.Nombre;
 
-                            ws.Cells[row, 8].Value = r.UbicacionProducto?.Nombre;
-                            ws.Cells[row, 9].Value = r.TipoSoporte?.Nombre;
-                            ws.Cells[row, 10].Value = r.UbicacionProducto?.Familia?.Nombre;
-
-                            ws.Cells[row, 11].Value = r.Id;
-                            ws.Cells[row, 12].Value = r.Nombre;
-                            ws.Cells[row, 13].Value = r.Cantidad;
-                            ws.Cells[row, 14].Value = r.Descripcion;
-                            ws.Cells[row, 15].Value = r.Precio;
-                            ws.Cells[row, 16].Value = r.TipoRepuesto.ToString();
-                            row++;
-                        }
+                        ws.Cells[row, 10].Value = r.Id;
+                        ws.Cells[row, 11].Value = r.Nombre;
+                        ws.Cells[row, 12].Value = r.Cantidad;
+                        ws.Cells[row, 13].Value = r.Precio;
+                        ws.Cells[row, 14].Value = r.Cantidad * r.Precio;
+                        row++;
                     }
                 }
 
                 if (ws.Dimension != null) ws.Cells[ws.Dimension.Address].AutoFitColumns();
                 package.Save();
-
-                MessageBox.Show("Datos exportados correctamente.", "Éxito",
+                MessageBox.Show("Exportado correctamente.", "Éxito",
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString(), "Error al exportar");
+                MessageBox.Show($"Error al exportar: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 _isExporting = false;
                 ExportarExcelButton.IsEnabled = true;
+            }
+        }
+
+        // ==== Formato y estilo en la grilla ====
+
+        private void PedidosDataGrid_AutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
+        {
+            // Formato dd/MM/yyyy en columnas de fechas del Pedido
+            if (e.PropertyName == nameof(Pedido.FechaCreacion) ||
+                e.PropertyName == nameof(Pedido.FechaLlegada) ||
+                e.PropertyName == nameof(Pedido.FechaIncidencia))
+            {
+                if (e.Column is DataGridTextColumn col)
+                {
+                    col.Binding = new Binding(e.PropertyName)
+                    {
+                        StringFormat = "dd/MM/yyyy"
+                    };
+                }
+            }
+        }
+
+        private void PedidosDataGrid_LoadingRow(object? sender, DataGridRowEventArgs e)
+        {
+            if (e.Row.Item is Pedido p && p.EstaVencido)
+            {
+                e.Row.ToolTip = "Pedido vencido (Fecha de llegada igual o anterior a hoy).";
+                e.Row.Background = new SolidColorBrush(Color.FromRgb(255, 228, 225)); // MistyRose
+            }
+            else
+            {
+                e.Row.ClearValue(BackgroundProperty);
+                e.Row.ToolTip = null;
             }
         }
     }

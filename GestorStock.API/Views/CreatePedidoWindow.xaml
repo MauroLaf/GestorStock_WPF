@@ -14,8 +14,8 @@
         <!-- Cabecera -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
             <TextBlock Text="Familia:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <ComboBox x:Name="cmbFamilia" Width="220" DisplayMemberPath="Nombre"
-                      SelectionChanged="cmbFamilia_SelectionChanged" Margin="0,0,12,0"/>
+            <ComboBox x:Name="cmbFamilia" Width="220" DisplayMemberPath="Nombre" Margin="0,0,12,0"
+                      SelectionChanged="cmbFamilia_SelectionChanged"/>
             <TextBlock Text="Ubicación:" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <ComboBox x:Name="cmbUbicacion" Width="280" DisplayMemberPath="Nombre" Margin="0,0,12,0"/>
             <TextBlock Text="Proveedor:" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -32,8 +32,9 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                <Button Content="Agregar línea" Click="BtnAgregarLinea_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
-                <Button Content="Quitar línea"  Click="BtnQuitarLinea_Click"  Style="{StaticResource ModernButtonStyle}"/>
+                <Button Content="Agregar línea" Click="BtnAgregarLinea_Click" Margin="0,0,8,0"/>
+                <Button Content="Editar línea"  Click="BtnEditarLinea_Click"  Margin="0,0,8,0"/>
+                <Button Content="Quitar línea"  Click="BtnQuitarLinea_Click"/>
             </StackPanel>
 
             <DataGrid x:Name="dgRepuestos" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Single">
@@ -42,7 +43,7 @@
                     <DataGridTextColumn Header="Descripción"  Binding="{Binding Descripcion}"               Width="*"/>
                     <DataGridTextColumn Header="Cantidad"     Binding="{Binding Cantidad}"                  Width="80"/>
                     <DataGridTextColumn Header="Precio"       Binding="{Binding Precio}"                    Width="100"/>
-                    <DataGridTextColumn Header="Tipo"         Binding="{Binding TipoRepuesto}"              Width="120"/>
+                    <DataGridTextColumn Header="Tipo"         Binding="{Binding TipoSoporte.Nombre}"        Width="140"/>
                     <DataGridTextColumn Header="Ubicación"    Binding="{Binding UbicacionProducto.Nombre}"  Width="220"/>
                 </DataGrid.Columns>
             </DataGrid>
@@ -50,8 +51,8 @@
 
         <!-- Botonera -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button Content="Guardar"  Click="BtnGuardar_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
-            <Button Content="Cancelar" IsCancel="True"          Style="{StaticResource ModernButtonStyle}"/>
+            <Button Content="Guardar"  Click="BtnGuardar_Click" Margin="0,0,8,0"/>
+            <Button Content="Cancelar" IsCancel="True"/>
         </StackPanel>
     </Grid>
 </Window>

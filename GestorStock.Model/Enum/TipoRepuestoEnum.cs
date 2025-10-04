@@ -8,7 +8,7 @@ namespace GestorStock.Model.Enum
 {
     public enum TipoRepuestoEnum
     {
-        Original = 1,
-        Compatible = 2
+        Original = 0,
+        Usado = 1
     }
 }
