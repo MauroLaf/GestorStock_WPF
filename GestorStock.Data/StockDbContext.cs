@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using GestorStock.Model.Entities;
+using GestorStock.Model.Enum;
 
 namespace GestorStock.Data
 {
@@ -76,6 +77,34 @@ namespace GestorStock.Data
             );
 
             // ================== SEEDING ==================
+            // 1) Proveedor demo
+            modelBuilder.Entity<Proveedor>().HasData(
+                new Proveedor { ProveedorId = 1, Nombre = "Proveedor Demo" }
+            );
+
+            // 2) Pedido demo (usa una fecha fija para evitar difs futuras de migración)
+            modelBuilder.Entity<Pedido>().HasData(
+                new Pedido { Id = 1, FechaCreacion = new DateTime(2025, 10, 04), FamiliaId = 1, Descripcion = "Pedido demo" }
+            );
+
+            // 3) Repuesto demo con FKs válidas y coherentes (UbicacionProductoId=5 es de FamiliaId=1)
+            modelBuilder.Entity<Repuesto>().HasData(
+                new Repuesto
+                {
+                    Id = 1,
+                    Nombre = "Repuesto Demo",
+                    Descripcion = "",
+                    Cantidad = 1,
+                    Precio = 0m,
+                    TipoRepuesto = TipoRepuestoEnum.Original,          // el enum que uses
+                    FamiliaId = 1,
+                    UbicacionProductoId = 5,
+                    ProveedorId = 1,
+                    TipoSoporteId = 1,
+                    PedidoId = 1
+                }
+            );
+
 
             modelBuilder.Entity<Familia>().HasData(
                 new Familia { Id = 1, Nombre = "INTERCAMBIADORES" },
