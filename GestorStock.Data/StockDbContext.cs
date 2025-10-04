@@ -66,16 +66,7 @@ namespace GestorStock.Data
                  .WithMany(ts => ts.Repuestos)
                  .HasForeignKey(r => r.TipoSoporteId)
                  .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            modelBuilder.Entity<Proveedor>().HasData(
-                new Proveedor { ProveedorId = 1, Nombre = "Proveedor Prueba" }
-            );
-
-            modelBuilder.Entity<Repuesto>().HasData(
-                new Repuesto { Id = 1, Nombre = "Repuesto Prueba" }
-            );
-
+            
             // ================== SEEDING ==================
             // 1) Proveedor demo
             modelBuilder.Entity<Proveedor>().HasData(
