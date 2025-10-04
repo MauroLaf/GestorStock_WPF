@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
+using System.Windows; // Necesario para MessageBox
 using GestorStock.Model.Entities;
 using GestorStock.Model.Enum;
 using GestorStock.Services.Interfaces;
@@ -177,6 +177,14 @@ namespace GestorStock.API.Views
             if (_pedidoEditar == null)
             {
                 await _pedidoService.CreateAsync(nuevo);
+
+                // 🔔 ALERTA DE CREACIÓN EXITOSA
+                MessageBox.Show(
+                    "El pedido se ha creado correctamente.",
+                    "Creación Exitosa",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
             }
             else
             {
@@ -190,6 +198,14 @@ namespace GestorStock.API.Views
                 _pedidoEditar.FamiliaId = nuevo.FamiliaId;
                 _pedidoEditar.Repuestos = nuevo.Repuestos;
                 await _pedidoService.UpdateAsync(_pedidoEditar);
+
+                // 🔔 ALERTA DE EDICIÓN EXITOSA (Opcional)
+                MessageBox.Show(
+                    "El pedido se ha actualizado correctamente.",
+                    "Actualización Exitosa",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
             }
 
             DialogResult = true;
