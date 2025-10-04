@@ -11,41 +11,21 @@ namespace GestorStock.Services.Implementations
     {
         protected readonly StockDbContext _ctx;
         protected readonly DbSet<TEntity> _set;
+        protected BaseCrudService(StockDbContext ctx) { _ctx = ctx; _set = _ctx.Set<TEntity>(); }
 
-        protected BaseCrudService(StockDbContext ctx)
-        {
-            _ctx = ctx;
-            _set = _ctx.Set<TEntity>();
-        }
+        public virtual Task<List<TEntity>> GetAllAsync(CancellationToken ct = default) =>
+            _set.AsNoTracking().ToListAsync(ct);
 
-        public virtual async Task<List<TEntity>> GetAllAsync(CancellationToken ct = default)
-            => await _set.AsNoTracking().ToListAsync(ct);
-
-        public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken ct = default)
-            => await _set.FindAsync(new object?[] { id }, ct);
+        public virtual Task<TEntity?> GetByIdAsync(TKey id, CancellationToken ct = default) =>
+            _set.FindAsync(new object?[] { id }, ct).AsTask();
 
         public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken ct = default)
-        {
-            _set.Add(entity);
-            await _ctx.SaveChangesAsync(ct);
-            return entity;
-        }
+        { _set.Add(entity); await _ctx.SaveChangesAsync(ct); return entity; }
 
         public virtual async Task UpdateAsync(TEntity entity, CancellationToken ct = default)
-        {
-            _set.Update(entity);
-            await _ctx.SaveChangesAsync(ct);
-        }
+        { _set.Update(entity); await _ctx.SaveChangesAsync(ct); }
 
         public virtual async Task DeleteAsync(TKey id, CancellationToken ct = default)
-        {
-            var entity = await GetByIdAsync(id, ct);
-            if (entity is not null)
-            {
-                _set.Remove(entity);
-                await _ctx.SaveChangesAsync(ct);
-            }
-        }
+        { var e = await GetByIdAsync(id, ct); if (e != null) { _set.Remove(e); await _ctx.SaveChangesAsync(ct); } }
     }
 }
-    

@@ -15,5 +15,23 @@ namespace GestorStock.Services.Implementations
             => await _ctx.Pedidos
                          .Include(p => p.Repuestos)
                          .FirstOrDefaultAsync(p => p.Id == id, ct);
+        public Task<List<Pedido>> GetAllWithDetalleAsync() =>
+        _ctx.Pedidos
+            .Include(p => p.Repuestos)
+                .ThenInclude(r => r.UbicacionProducto)
+                    .ThenInclude(u => u.Familia)
+            .Include(p => p.Repuestos)
+                .ThenInclude(r => r.TipoSoporte)
+            .AsNoTracking()
+            .ToListAsync();
+
+        public Task<Pedido?> GetWithDetalleAsync(int id) =>
+            _ctx.Pedidos
+                .Include(p => p.Repuestos)
+                    .ThenInclude(r => r.UbicacionProducto)
+                        .ThenInclude(u => u.Familia)
+                .Include(p => p.Repuestos)
+                    .ThenInclude(r => r.TipoSoporte)
+                .FirstOrDefaultAsync(p => p.Id == id);
     }
 }

@@ -1,96 +1,62 @@
-﻿<Window x:Class="GestorStock.API.AddItemWindow"
+﻿<Window x:Class="GestorStock.API.Views.AddItemWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Title="Agregar Ítem y Repuestos" Height="500" Width="600">
-    <Grid Margin="10">
+        Title="Agregar Repuesto"
+        Width="700" Height="420"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
 
-        <TextBlock Text="Proveedor:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="NombreProveedorTextBox" Grid.Row="0" Grid.Column="1" Margin="0,5" Text="{Binding NombreProveedor, Mode=TwoWay}"/>
-
-        <TextBlock Text="Familia:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="TipoFamiliaComboBox"
-          Grid.Row="1" Grid.Column="1" Margin="0,5"
-          DisplayMemberPath="Nombre"
-          SelectedItem="{Binding Familia, Mode=TwoWay}"/>
-
-        <TextBlock Text="Ubicación/Producto:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="UbicacionProductoComboBox"
-          Grid.Row="2" Grid.Column="1" Margin="0,5"
-          DisplayMemberPath="Nombre"
-          SelectedItem="{Binding UbicacionProducto, Mode=TwoWay}"/>
-
-        <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
-            <Button x:Name="AddUbicacionProductoButton" Content="+" Margin="5,0,2,0" VerticalAlignment="Center" Width="30" Height="25"/>
-            <Button x:Name="RemoveUbicacionProductoButton" Content="-" Margin="2,0,5,0" VerticalAlignment="Center" Width="30" Height="25"/>
-        </StackPanel>
-
-        <TextBlock Text="Tipo de Soporte:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="TipoSoporteComboBox"
-          Grid.Row="3" Grid.Column="1" Margin="0,5"
-          DisplayMemberPath="Nombre"
-          SelectedItem="{Binding TipoSoporte, Mode=TwoWay}"/>
-
-        <TextBlock Text="Tipo de Repuesto:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <ComboBox x:Name="TipoRepuestoComboBox"
-          Grid.Row="4" Grid.Column="1" Margin="0,5"
-          DisplayMemberPath="Nombre"/>
-
-        <TextBlock Text="Repuesto:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="RepuestoTextBox" Grid.Row="5" Grid.Column="1" Margin="0,5"/>
-
-        <TextBlock Text="Precio (€):" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="PrecioTextBox" Grid.Row="6" Grid.Column="1" Margin="0,5"/>
-
-        <TextBlock Text="Cantidad:" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-        <TextBox x:Name="CantidadTextBox" Grid.Row="7" Grid.Column="1" Margin="0,5"/>
-
-        <DataGrid x:Name="RepuestosDataGrid" Grid.Row="8" Grid.ColumnSpan="3" AutoGenerateColumns="False" Margin="0,10,0,0" IsReadOnly="True">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="*"/>
-                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="Auto"/>
-                <DataGridTextColumn Header="Tipo Repuesto" Binding="{Binding TipoRepuesto.Nombre}" Width="*"/>
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <Grid Grid.Row="9" Grid.ColumnSpan="3" HorizontalAlignment="Center">
+        <!-- Form -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="AddRepuestoButton" Content="Agregar Repuesto" Grid.Column="0" Margin="5"/>
-            <Button x:Name="EditRepuestoButton" Content="Editar Repuesto" Grid.Column="1" Margin="5"/>
-            <Button x:Name="UpdateRepuestoButton" Content="Actualizar Repuesto" Grid.Column="2" Margin="5" Visibility="Collapsed"/>
-            <Button x:Name="DeleteRepuestoButton" Content="Eliminar Repuesto" Grid.Column="3" Margin="5"/>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Familia:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbFamilia" Grid.Row="0" Grid.Column="1" DisplayMemberPath="Nombre"
+                       SelectionChanged="cmbFamilia_SelectionChanged" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Ubicación:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbUbicacion" Grid.Row="1" Grid.Column="1" DisplayMemberPath="Nombre" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Proveedor:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbProveedor" Grid.Row="2" Grid.Column="1" DisplayMemberPath="Nombre" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Tipo Soporte:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbTipoSoporte" Grid.Row="3" Grid.Column="1" DisplayMemberPath="Nombre" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Tipo Repuesto:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbTipoRepuesto" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="Nombre:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+            <TextBox   x:Name="txtNombre" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="Descripción:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox   x:Name="txtDescripcion" Grid.Row="6" Grid.Column="1"/>
         </Grid>
 
-        <StackPanel Grid.Row="10" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button x:Name="AceptarButton" Content="Aceptar" Width="120" Margin="5"/>
-            <Button x:Name="CancelarButton" Content="Cancelar" Width="120" Margin="5"/>
+        <!-- Botonera -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <TextBlock Text="Cantidad:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="txtCantidad" Width="60" Text="1" Margin="0,0,12,0"/>
+            <TextBlock Text="Precio:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="txtPrecio" Width="80" Text="0" Margin="0,0,12,0"/>
+            <Button Content="Agregar" Click="BtnAgregar_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
+            <Button Content="Cancelar" IsCancel="True" Style="{StaticResource ModernButtonStyle}"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Linq;
 using System.Windows.Data;
-using System.Collections.Generic;
 using GestorStock.Model.Entities;
 
 namespace GestorStock.API.Converters
@@ -11,17 +10,12 @@ namespace GestorStock.API.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is ICollection<Item> items)
-            {
-                // Suma los totales de todos los ítems en el pedido.
-                return items.Sum(item => item.Repuestos?.Sum(repuesto => repuesto.Precio * repuesto.Cantidad) ?? 0);
-            }
-            return 0;
+            if (value is Pedido p && p.Repuestos != null)
+                return p.Repuestos.Sum(r => r.Precio * r.Cantidad); // sin ??
+            return 0m;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
+            => throw new NotImplementedException();
     }
 }

@@ -13,11 +13,8 @@ namespace GestorStock.Services.Implementations
     {
         public UbicacionProductoService(StockDbContext ctx) : base(ctx) { }
 
-        public Task<List<UbicacionProducto>> GetByFamiliaAsync(int familiaId, CancellationToken ct = default)
-            => _ctx.UbicacionProductos
-                   .Where(u => u.FamiliaId == familiaId)
-                   .OrderBy(u => u.Nombre)
-                   .AsNoTracking()
-                   .ToListAsync(ct);
+        public Task<List<UbicacionProducto>> GetByFamiliaAsync(int familiaId, CancellationToken ct = default) =>
+            _ctx.UbicacionProductos.Where(u => u.FamiliaId == familiaId)
+                .OrderBy(u => u.Nombre).AsNoTracking().ToListAsync(ct);
     }
 }

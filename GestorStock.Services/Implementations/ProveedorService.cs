@@ -5,7 +5,5 @@ using GestorStock.Services.Interfaces;
 namespace GestorStock.Services.Implementations
 {
     public class ProveedorService : BaseCrudService<Proveedor, int>, IProveedorService
-    {
-        public ProveedorService(StockDbContext ctx) : base(ctx) { }
-    }
+    { public ProveedorService(StockDbContext ctx) : base(ctx) { } }
 }

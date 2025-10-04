@@ -1,201 +1,158 @@
-﻿using GestorStock.Model.Entities;
-using GestorStock.Services.Interfaces;
-using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Runtime.Versioning;
-using System.Collections.Generic;
+using GestorStock.Model.Entities;
+using GestorStock.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace GestorStock.API
+namespace GestorStock.API.Views
 {
-    [SupportedOSPlatform("windows")]
     public partial class CreatePedidoWindow : Window
     {
-        private readonly IPedidoService _pedidoService;
-        private readonly IItemService _itemService;
-        private readonly ITipoFamiliaService _tipoFamiliaService;
-        private readonly IRepuestoService _repuestoService;
-        private readonly ITipoRepuestoService _tipoRepuestoService;
-        private readonly ITipoItemService _tipoItemService;
-        private readonly IUbicacionProductoService _ubicacionProductoService;
+        private readonly IPedidoService _pedidos;
+        private readonly IRepuestoService _repuestos;
+        private readonly IFamiliaService _familias;
+        private readonly IUbicacionProductoService _ubicaciones;
+        private readonly IProveedorService _proveedores;
+        private readonly ITipoSoporteService _tiposSoporte;
+        private readonly IServiceProvider _sp;
 
-        private ObservableCollection<Item> _items;
-        public Pedido PedidoResult { get; private set; }
+        // Si vienes a editar, pasa el pedido
+        private readonly Pedido? _pedidoEditar;
 
-        public CreatePedidoWindow(
-            IPedidoService pedidoService,
-            IRepuestoService repuestoService,
-            ITipoFamiliaService tipoFamiliaService,
-            ITipoRepuestoService tipoRepuestoService,
-            ITipoItemService tipoItemService,
-            IItemService itemService,
-            IUbicacionProductoService ubicacionProductoService,
-            Pedido? pedidoToEdit = null)
+        private readonly ObservableCollection<Repuesto> _detalle = new();
+
+        public CreatePedidoWindow(IPedidoService pedidos, IRepuestoService repuestos,
+                                  IFamiliaService familias, ITipoSoporteService tiposSoporte,
+                                  IProveedorService proveedores, IUbicacionProductoService ubicaciones,
+                                  IServiceProvider sp,
+                                  Pedido? pedidoEditar = null)
         {
             InitializeComponent();
-            _pedidoService = pedidoService;
-            _itemService = itemService;
-            _tipoFamiliaService = tipoFamiliaService;
-            _repuestoService = repuestoService;
-            _tipoRepuestoService = tipoRepuestoService;
-            _tipoItemService = tipoItemService;
-            _ubicacionProductoService = ubicacionProductoService;
+            _pedidos = pedidos; _repuestos = repuestos; _familias = familias;
+            _tiposSoporte = tiposSoporte; _proveedores = proveedores; _ubicaciones = ubicaciones;
+            _sp = sp; _pedidoEditar = pedidoEditar;
 
-            _items = new ObservableCollection<Item>();
-            ItemsDataGrid.ItemsSource = _items;
+            dgRepuestos.ItemsSource = _detalle;
+            Loaded += CreatePedidoWindow_Loaded;
+        }
 
-            if (pedidoToEdit != null)
+        private async void CreatePedidoWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            cmbFamilia.ItemsSource = await _familias.GetAllAsync();
+            cmbProveedor.ItemsSource = await _proveedores.GetAllAsync();
+            cmbTipoSoporte.ItemsSource = await _tiposSoporte.GetAllAsync();
+
+            if (_pedidoEditar != null)
             {
-                PedidoResult = pedidoToEdit;
-                this.Title = "Editar Pedido";
-                LoadPedidoData();
-            }
-            else
-            {
-                PedidoResult = new Pedido
+                // Cargar familia y ubicaciones coherentes
+                var familiaEdit = (cmbFamilia.ItemsSource as System.Collections.Generic.List<Familia>)!
+                                  .FirstOrDefault(f => f.Id == _pedidoEditar.FamiliaId);
+                cmbFamilia.SelectedItem = familiaEdit;
+
+                await CargarUbicacionesAsync();
+
+                // detalle
+                var pedidoCompleto = await _pedidos.GetWithDetalleAsync(_pedidoEditar.Id);
+                if (pedidoCompleto?.Repuestos != null)
                 {
-                    FechaCreacion = DateTime.Now
+                    _detalle.Clear();
+                    foreach (var r in pedidoCompleto.Repuestos)
+                        _detalle.Add(r);
+                }
+            }
+        }
+
+        private async Task CargarUbicacionesAsync()
+        {
+            cmbUbicacion.ItemsSource = null;
+            if (cmbFamilia.SelectedItem is Familia f)
+                cmbUbicacion.ItemsSource = await _ubicaciones.GetByFamiliaAsync(f.Id);
+        }
+
+        private async void cmbFamilia_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+            => await CargarUbicacionesAsync();
+
+        private void BtnAgregarLinea_Click(object sender, RoutedEventArgs e)
+        {
+            var win = _sp.GetRequiredService<AddItemWindow>();
+            win.Owner = this;
+            if (win.ShowDialog() == true && win.RepuestoCreado != null)
+            {
+                // Si quieres forzar que la línea coincida con la familia/ubicación seleccionada:
+                if (cmbFamilia.SelectedItem is Familia fam) win.RepuestoCreado.FamiliaId = fam.Id;
+                if (cmbUbicacion.SelectedItem is UbicacionProducto ubi) win.RepuestoCreado.UbicacionProductoId = ubi.Id;
+
+                _detalle.Add(win.RepuestoCreado);
+            }
+        }
+
+        private void BtnQuitarLinea_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgRepuestos.SelectedItem is Repuesto sel)
+                _detalle.Remove(sel);
+        }
+
+        private async void BtnGuardar_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbFamilia.SelectedItem is not Familia fam ||
+                cmbUbicacion.SelectedItem is not UbicacionProducto ubi ||
+                cmbProveedor.SelectedItem is not Proveedor prov ||
+                cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
+            {
+                MessageBox.Show("Completa la cabecera del pedido.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_pedidoEditar == null)
+            {
+                var nuevo = new Pedido
+                {
+                    FechaCreacion = System.DateTime.Now,
+                    FamiliaId = fam.Id,
+                    Descripcion = "Pedido creado desde CreatePedidoWindow"
                 };
-            }
-
-            AddItemButton.Click += AddItemButton_Click;
-            EditItemButton.Click += EditItemButton_Click;
-            DeleteItemButton.Click += DeleteItemButton_Click;
-            GuardarPedidoButton.Click += GuardarPedidoButton_Click;
-            CancelarButton.Click += CancelarButton_Click;
-        }
-
-        private void LoadPedidoData()
-        {
-            if (PedidoResult == null) return;
-            DescripcionTextBox.Text = PedidoResult.Descripcion;
-            IncidenciaCheckBox.IsChecked = PedidoResult.Incidencia;
-            IncidenciaDatePicker.SelectedDate = PedidoResult.FechaIncidencia;
-            FechaLlegadaDatePicker.SelectedDate = PedidoResult.FechaLlegada;
-            DescripcionIncidenciaTextBox.Text = PedidoResult.DescripcionIncidencia;
-
-            if (PedidoResult.Items != null)
-            {
-                _items.Clear();
-                foreach (var item in PedidoResult.Items)
+                // asigna cabecera a las líneas (por si falta algo)
+                foreach (var r in _detalle)
                 {
-                    _items.Add(item);
+                    r.FamiliaId = fam.Id;
+                    if (r.UbicacionProductoId == 0) r.UbicacionProductoId = ubi.Id;
+                    if (r.ProveedorId == 0) r.ProveedorId = prov.ProveedorId;
+                    if (r.TipoSoporteId == 0) r.TipoSoporteId = sop.Id;
                 }
-            }
-        }
-
-        private void AddItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            var addItemWindow = new AddItemWindow(
-                _tipoFamiliaService,
-                _repuestoService,
-                _tipoRepuestoService,
-                _tipoItemService,
-                _ubicacionProductoService);
-
-            if (addItemWindow.ShowDialog() == true)
-            {
-                _items.Add(addItemWindow.ItemResult);
-            }
-        }
-
-        private async void EditItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItem = ItemsDataGrid.SelectedItem as Item;
-            if (selectedItem == null)
-            {
-                MessageBox.Show("Por favor, selecciona un ítem para editar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            Item? itemToEdit;
-
-            // Si el ítem no tiene ID (es nuevo, no guardado en BD), usa el objeto directamente
-            if (selectedItem.Id == 0)
-            {
-                itemToEdit = selectedItem;
+                nuevo.Repuestos = _detalle.ToList();
+                await _pedidos.AddAsync(nuevo);
             }
             else
             {
-                // Si tiene ID, cárgalo desde la base de datos con todas sus relaciones
-                try
+                // Update básico: elimina y vuelve a insertar las líneas (simple)
+                var ped = await _pedidos.GetWithDetalleAsync(_pedidoEditar.Id);
+                if (ped == null) { MessageBox.Show("No se encontró el pedido."); return; }
+
+                ped.FamiliaId = fam.Id;
+
+                // sincroniza detalle
+                var existentes = ped.Repuestos?.ToList() ?? new();
+                foreach (var r in existentes)
+                    await _repuestos.DeleteAsync(r.Id);
+
+                foreach (var r in _detalle)
                 {
-                    itemToEdit = await _itemService.GetItemWithAllRelationsAsync(selectedItem.Id);
+                    r.PedidoId = ped.Id;
+                    r.FamiliaId = fam.Id;
+                    if (r.UbicacionProductoId == 0) r.UbicacionProductoId = ubi.Id;
+                    if (r.ProveedorId == 0) r.ProveedorId = prov.ProveedorId;
+                    if (r.TipoSoporteId == 0) r.TipoSoporteId = sop.Id;
+                    await _repuestos.AddAsync(r);
                 }
 
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error al cargar el ítem para editar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+                await _pedidos.UpdateAsync(ped);
             }
 
-            if (itemToEdit == null)
-            {
-                MessageBox.Show("No se pudo cargar el ítem para editar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var editItemWindow = new AddItemWindow(
-                _tipoFamiliaService,
-                _repuestoService,
-                _tipoRepuestoService,
-                _tipoItemService,
-                _ubicacionProductoService,
-                itemToEdit);
-
-            if (editItemWindow.ShowDialog() == true)
-            {
-                var index = _items.IndexOf(selectedItem);
-                if (index != -1)
-                {
-                    // Usar RemoveAt e Insert en lugar de asignación directa
-                    // para que ObservableCollection notifique el cambio correctamente
-                    _items.RemoveAt(index);
-                    _items.Insert(index, editItemWindow.ItemResult);
-                }
-            }
-        }
-
-        private void DeleteItemButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedItem = ItemsDataGrid.SelectedItem as Item;
-            if (selectedItem == null)
-            {
-                MessageBox.Show("Por favor, selecciona un ítem para eliminar.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            _items.Remove(selectedItem);
-        }
-
-        private async void GuardarPedidoButton_Click(object sender, RoutedEventArgs e)
-        {
-            PedidoResult.Descripcion = DescripcionTextBox.Text;
-            PedidoResult.Incidencia = IncidenciaCheckBox.IsChecked ?? false;
-            PedidoResult.FechaIncidencia = IncidenciaDatePicker.SelectedDate;
-            PedidoResult.FechaLlegada = FechaLlegadaDatePicker.SelectedDate;
-            PedidoResult.DescripcionIncidencia = DescripcionIncidenciaTextBox.Text;
-            PedidoResult.Items = _items.ToList();
-
-            if (PedidoResult.Id == 0)
-            {
-                await _pedidoService.CreatePedidoAsync(PedidoResult);
-                MessageBox.Show("Pedido creado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                await _pedidoService.UpdatePedidoAsync(PedidoResult);
-                MessageBox.Show("Pedido actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
-            this.DialogResult = true;
-        }
-
-        private void CancelarButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
+            DialogResult = true;
+            Close();
         }
     }
 }
