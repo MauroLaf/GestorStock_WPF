@@ -17,35 +17,35 @@ namespace GestorStock.API
         {
             base.OnStartup(e);
 
-            var config = new ConfigurationBuilder()
+            var cfg = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
 
-            var cs = config.GetConnectionString("Default")
-                     ?? "server=localhost;port=3306;database=GestorStockDb;user=gestor;password=12345;";
+            var cs = cfg.GetConnectionString("Default")
+                  ?? "server=localhost;port=3306;database=GestorStockDb;user=gestor;password=12345;";
 
             var sc = new ServiceCollection();
 
             sc.AddDbContext<StockDbContext>(o => o.UseMySql(cs, ServerVersion.AutoDetect(cs)));
 
-            // Servicios CRUD
+            // Servicios
             sc.AddScoped<IFamiliaService, FamiliaService>();
             sc.AddScoped<IUbicacionProductoService, UbicacionProductoService>();
             sc.AddScoped<IProveedorService, ProveedorService>();
             sc.AddScoped<ITipoSoporteService, TipoSoporteService>();
-            sc.AddScoped<ITipoRepuestoService, TipoRepuestoService>(); // enum
+            sc.AddScoped<ITipoRepuestoService, TipoRepuestoService>();
             sc.AddScoped<IPedidoService, PedidoService>();
             sc.AddScoped<IRepuestoService, RepuestoService>();
 
             // Ventanas
-            sc.AddTransient<GestorStock.API.Views.MainWindow>();
+            sc.AddTransient<Views.MainWindow>();
             sc.AddTransient<Views.CreatePedidoWindow>();
             sc.AddTransient<Views.AddItemWindow>();
 
             Services = sc.BuildServiceProvider();
 
-            var main = Services.GetRequiredService<GestorStock.API.Views.MainWindow>();
+            var main = Services.GetRequiredService<Views.MainWindow>();
             main.Show();
         }
     }

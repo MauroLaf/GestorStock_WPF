@@ -1,8 +1,14 @@
-﻿    <Application x:Class="GestorStock.API.App"
-                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 xmlns:local="clr-namespace:GestorStock.API">
-        <Application.Resources>
+﻿<Application x:Class="GestorStock.API.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:GestorStock.API">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Si tienes un diccionario externo, descomenta esta línea:
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ModernStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            -->
 
             <!-- Estilo global para todas las ventanas -->
             <Style TargetType="Window">
@@ -10,11 +16,11 @@
                 <!-- Fondo marrón claro global -->
                 <Setter Property="Background" Value="#E8D999"/>
             </Style>
+
             <!-- Grid marrón claro global -->
             <Style TargetType="Grid">
                 <Setter Property="Background" Value="#E8D999"/>
             </Style>
-
 
             <!-- Estilo para botones -->
             <Style x:Key="ModernButtonStyle" TargetType="Button">
@@ -46,5 +52,56 @@
                 </Style.Triggers>
             </Style>
 
-        </Application.Resources>
-    </Application>
+            <!-- Estilo para el DataGrid -->
+            <Style x:Key="ModernDataGridStyle" TargetType="DataGrid">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="BorderBrush" Value="#ddd"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="RowBackground" Value="White"/>
+                <Setter Property="GridLinesVisibility" Value="None"/>
+            </Style>
+
+            <!-- Estilo para el TextBox de búsqueda -->
+            <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
+                <Setter Property="Height" Value="35"/>
+                <Setter Property="BorderBrush" Value="LightGray"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="5"/>
+                <Setter Property="Background" Value="#f9f9f9"/>
+                <Setter Property="Foreground" Value="#333"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="5">
+                                <Grid>
+                                    <ScrollViewer x:Name="PART_ContentHost"
+                                                  Margin="5,0,5,0"
+                                                  VerticalAlignment="Center"/>
+                                    <TextBlock IsHitTestVisible="False"
+                                               Text="{TemplateBinding Tag}"
+                                               x:Name="PlaceholderText"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Left"
+                                               Foreground="DarkGray"
+                                               Margin="10,0,0,0"
+                                               FontStyle="Italic"
+                                               Visibility="Collapsed" />
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Text" Value="">
+                                    <Setter TargetName="PlaceholderText" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

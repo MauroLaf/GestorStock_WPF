@@ -53,7 +53,6 @@ namespace GestorStock.API.ViewModels
             get => _familia;
             set { Set(ref _familia, value); _ = LoadUbicacionesAsync(); }
         }
-
         public UbicacionProducto? SelectedUbicacion { get; set; }
         public Proveedor? SelectedProveedor { get; set; }
         public TipoSoporte? SelectedTipoSoporte { get; set; }

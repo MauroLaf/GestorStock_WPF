@@ -21,7 +21,7 @@ namespace GestorStock.API.Views
         private readonly ITipoSoporteService _tipoSoporteService;
         private readonly IPedidoService _pedidoService;
         private readonly IRepuestoService _repuestoService;
-        private readonly IServiceProvider _sp;   // << opción A
+        private readonly IServiceProvider _sp;   // Resolver ventanas por DI (opción A)
 
         private readonly ObservableCollection<Pedido> _pedidos = new();
         private bool _isExporting = false;
@@ -93,6 +93,7 @@ namespace GestorStock.API.Views
             }
         }
 
+        // === ÚNICA definición de este método (evita duplicados) ===
         private async Task CargarTodosLosPedidosAsync()
         {
             try
@@ -131,15 +132,17 @@ namespace GestorStock.API.Views
             await CargarTodosLosPedidosAsync();
         }
 
-        // === Opción A: resolver ventanas por DI ===
+        // === Crear ===
         private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             var win = _sp.GetRequiredService<CreatePedidoWindow>();
             win.Owner = this;
+
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
 
+        // === Editar ===
         private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (PedidosDataGrid.SelectedItem is not Pedido sel)
@@ -159,16 +162,13 @@ namespace GestorStock.API.Views
 
             var win = _sp.GetRequiredService<CreatePedidoWindow>();
             win.Owner = this;
-
-            
-            public Pedido? PedidoEditar { get; set; }
-
-            win.PedidoEditar = pedidoCompleto;
+            win.PedidoEditar = pedidoCompleto;   // <- propiedad en CreatePedidoWindow (ver punto 2)
 
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
 
+        // === Eliminar Pedido ===
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (PedidosDataGrid.SelectedItem is not Pedido sel) return;
@@ -181,6 +181,7 @@ namespace GestorStock.API.Views
             }
         }
 
+        // === Eliminar Repuesto (fila detalle) ===
         private async void EliminarRepuesto_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is int repuestoId)
@@ -204,6 +205,7 @@ namespace GestorStock.API.Views
 
         private void PedidosDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
 
+        // === Exportar a Excel (EPPlus 8) ===
         private void ExportarExcelButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isExporting) return;
@@ -225,7 +227,10 @@ namespace GestorStock.API.Views
 
                 if (dlg.ShowDialog() != true) return;
 
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                // EPPlus 8+: configure licencia ANTES de instanciar ExcelPackage
+                // Elige una de estas dos:
+                // ExcelPackage.License.SetNonCommercialPersonal(Environment.UserName);
+                ExcelPackage.License.SetNonCommercialOrganization("GestorStock");
 
                 using var package = new ExcelPackage(new FileInfo(dlg.FileName));
                 var sheetName = "Pedidos_Unificado";

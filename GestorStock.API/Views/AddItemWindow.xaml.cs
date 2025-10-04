@@ -24,7 +24,7 @@ namespace GestorStock.API.Views
             cmbFamilia.ItemsSource = await _ctx.Familias.AsNoTracking().OrderBy(f => f.Nombre).ToListAsync();
             cmbProveedor.ItemsSource = await _ctx.Proveedores.AsNoTracking().OrderBy(p => p.Nombre).ToListAsync();
             cmbTipoSoporte.ItemsSource = await _ctx.TipoSoportes.AsNoTracking().OrderBy(t => t.Nombre).ToListAsync();
-            cmbTipoRepuesto.ItemsSource = Enum.GetValues(typeof(TipoRepuestoEnum));
+            cmbTipoRepuesto.ItemsSource = Enum.GetValues(typeof(GestorStock.Model.Enum.TipoRepuestoEnum));
         }
 
         private async void cmbFamilia_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

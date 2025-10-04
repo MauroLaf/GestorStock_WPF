@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using GestorStock.Model.Entities;
 using GestorStock.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GestorStock.API.Views
@@ -19,21 +18,23 @@ namespace GestorStock.API.Views
         private readonly ITipoSoporteService _tiposSoporte;
         private readonly IServiceProvider _sp;
 
-        // Si vienes a editar, pasa el pedido
-        private readonly Pedido? _pedidoEditar;
+        // Se asigna desde MainWindow (opción A)
+        public Pedido? PedidoEditar { get; set; }
 
         private readonly ObservableCollection<Repuesto> _detalle = new();
 
-        public CreatePedidoWindow(IPedidoService pedidos, IRepuestoService repuestos,
-                                  IFamiliaService familias, ITipoSoporteService tiposSoporte,
-                                  IProveedorService proveedores, IUbicacionProductoService ubicaciones,
-                                  IServiceProvider sp,
-                                  Pedido? pedidoEditar = null)
+        public CreatePedidoWindow(IPedidoService pedidos,
+                                  IRepuestoService repuestos,
+                                  IFamiliaService familias,
+                                  ITipoSoporteService tiposSoporte,
+                                  IProveedorService proveedores,
+                                  IUbicacionProductoService ubicaciones,
+                                  IServiceProvider sp)
         {
             InitializeComponent();
             _pedidos = pedidos; _repuestos = repuestos; _familias = familias;
             _tiposSoporte = tiposSoporte; _proveedores = proveedores; _ubicaciones = ubicaciones;
-            _sp = sp; _pedidoEditar = pedidoEditar;
+            _sp = sp;
 
             dgRepuestos.ItemsSource = _detalle;
             Loaded += CreatePedidoWindow_Loaded;
@@ -41,25 +42,26 @@ namespace GestorStock.API.Views
 
         private async void CreatePedidoWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // Cargar combos de cabecera
             cmbFamilia.ItemsSource = await _familias.GetAllAsync();
             cmbProveedor.ItemsSource = await _proveedores.GetAllAsync();
             cmbTipoSoporte.ItemsSource = await _tiposSoporte.GetAllAsync();
 
-            if (_pedidoEditar != null)
+            if (PedidoEditar != null)
             {
-                // Cargar familia y ubicaciones coherentes
-                var familiaEdit = (cmbFamilia.ItemsSource as System.Collections.Generic.List<Familia>)!
-                                  .FirstOrDefault(f => f.Id == _pedidoEditar.FamiliaId);
-                cmbFamilia.SelectedItem = familiaEdit;
+                // Seleccionar familia del pedido
+                var familias = (cmbFamilia.ItemsSource as System.Collections.Generic.IEnumerable<Familia>)!;
+                cmbFamilia.SelectedItem = familias.FirstOrDefault(f => f.Id == PedidoEditar.FamiliaId);
 
+                // Cargar ubicaciones según familia seleccionada
                 await CargarUbicacionesAsync();
 
-                // detalle
-                var pedidoCompleto = await _pedidos.GetWithDetalleAsync(_pedidoEditar.Id);
-                if (pedidoCompleto?.Repuestos != null)
+                // Cargar detalle desde BD (por si viene desactualizado en memoria)
+                var ped = await _pedidos.GetWithDetalleAsync(PedidoEditar.Id);
+                _detalle.Clear();
+                if (ped?.Repuestos != null)
                 {
-                    _detalle.Clear();
-                    foreach (var r in pedidoCompleto.Repuestos)
+                    foreach (var r in ped.Repuestos)
                         _detalle.Add(r);
                 }
             }
@@ -79,9 +81,10 @@ namespace GestorStock.API.Views
         {
             var win = _sp.GetRequiredService<AddItemWindow>();
             win.Owner = this;
+
             if (win.ShowDialog() == true && win.RepuestoCreado != null)
             {
-                // Si quieres forzar que la línea coincida con la familia/ubicación seleccionada:
+                // Alinear con cabecera si corresponde
                 if (cmbFamilia.SelectedItem is Familia fam) win.RepuestoCreado.FamiliaId = fam.Id;
                 if (cmbUbicacion.SelectedItem is UbicacionProducto ubi) win.RepuestoCreado.UbicacionProductoId = ubi.Id;
 
@@ -102,19 +105,21 @@ namespace GestorStock.API.Views
                 cmbProveedor.SelectedItem is not Proveedor prov ||
                 cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
             {
-                MessageBox.Show("Completa la cabecera del pedido.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Completa la cabecera del pedido.", "Validación",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (_pedidoEditar == null)
+            if (PedidoEditar == null)
             {
+                // Crear
                 var nuevo = new Pedido
                 {
                     FechaCreacion = System.DateTime.Now,
                     FamiliaId = fam.Id,
                     Descripcion = "Pedido creado desde CreatePedidoWindow"
                 };
-                // asigna cabecera a las líneas (por si falta algo)
+
                 foreach (var r in _detalle)
                 {
                     r.FamiliaId = fam.Id;
@@ -122,18 +127,24 @@ namespace GestorStock.API.Views
                     if (r.ProveedorId == 0) r.ProveedorId = prov.ProveedorId;
                     if (r.TipoSoporteId == 0) r.TipoSoporteId = sop.Id;
                 }
+
                 nuevo.Repuestos = _detalle.ToList();
                 await _pedidos.AddAsync(nuevo);
             }
             else
             {
-                // Update básico: elimina y vuelve a insertar las líneas (simple)
-                var ped = await _pedidos.GetWithDetalleAsync(_pedidoEditar.Id);
-                if (ped == null) { MessageBox.Show("No se encontró el pedido."); return; }
+                // Editar: sincroniza detalle de forma simple
+                var ped = await _pedidos.GetWithDetalleAsync(PedidoEditar.Id);
+                if (ped == null)
+                {
+                    MessageBox.Show("No se encontró el pedido.", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 ped.FamiliaId = fam.Id;
 
-                // sincroniza detalle
+                // Borra líneas existentes y vuelve a insertar
                 var existentes = ped.Repuestos?.ToList() ?? new();
                 foreach (var r in existentes)
                     await _repuestos.DeleteAsync(r.Id);
@@ -145,6 +156,7 @@ namespace GestorStock.API.Views
                     if (r.UbicacionProductoId == 0) r.UbicacionProductoId = ubi.Id;
                     if (r.ProveedorId == 0) r.ProveedorId = prov.ProveedorId;
                     if (r.TipoSoporteId == 0) r.TipoSoporteId = sop.Id;
+
                     await _repuestos.AddAsync(r);
                 }
 
