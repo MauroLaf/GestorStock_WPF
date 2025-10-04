@@ -36,18 +36,14 @@ namespace GestorStock.Data.Migrations
                 name: "Proveedores",
                 columns: table => new
                 {
-                    ProveedorId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Nombre = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Telefono = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Email = table.Column<string>(type: "longtext", nullable: true)
+                    Nombre = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Proveedores", x => x.ProveedorId);
+                    table.PrimaryKey("PK_Proveedores", x => x.Id);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -119,6 +115,42 @@ namespace GestorStock.Data.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "RepuestoCatalogos",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Nombre = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    FamiliaId = table.Column<int>(type: "int", nullable: true),
+                    UbicacionProductoId = table.Column<int>(type: "int", nullable: true),
+                    TipoSoporteId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RepuestoCatalogos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RepuestoCatalogos_Familias_FamiliaId",
+                        column: x => x.FamiliaId,
+                        principalTable: "Familias",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RepuestoCatalogos_TipoSoportes_TipoSoporteId",
+                        column: x => x.TipoSoporteId,
+                        principalTable: "TipoSoportes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RepuestoCatalogos_UbicacionProductos_UbicacionProductoId",
+                        column: x => x.UbicacionProductoId,
+                        principalTable: "UbicacionProductos",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Repuestos",
                 columns: table => new
                 {
@@ -156,7 +188,7 @@ namespace GestorStock.Data.Migrations
                         name: "FK_Repuestos_Proveedores_ProveedorId",
                         column: x => x.ProveedorId,
                         principalTable: "Proveedores",
-                        principalColumn: "ProveedorId",
+                        principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Repuestos_TipoSoportes_TipoSoporteId",
@@ -186,8 +218,8 @@ namespace GestorStock.Data.Migrations
 
             migrationBuilder.InsertData(
                 table: "Proveedores",
-                columns: new[] { "ProveedorId", "Email", "Nombre", "Telefono" },
-                values: new object[] { 1, "", "Proveedor Demo", "" });
+                columns: new[] { "Id", "Nombre" },
+                values: new object[] { 1, "Proveedor Demo" });
 
             migrationBuilder.InsertData(
                 table: "TipoSoportes",
@@ -263,12 +295,27 @@ namespace GestorStock.Data.Migrations
             migrationBuilder.InsertData(
                 table: "Repuestos",
                 columns: new[] { "Id", "Cantidad", "Descripcion", "FamiliaId", "Nombre", "PedidoId", "Precio", "ProveedorId", "TipoRepuesto", "TipoSoporteId", "UbicacionProductoId" },
-                values: new object[] { 1, 1, "", 1, "Repuesto Demo", 1, 0m, 1, 1, 1, 5 });
+                values: new object[] { 1, 1, "", 1, "Repuesto Demo", 1, 0m, 1, 0, 1, 5 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Pedidos_FamiliaId",
                 table: "Pedidos",
                 column: "FamiliaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RepuestoCatalogos_FamiliaId",
+                table: "RepuestoCatalogos",
+                column: "FamiliaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RepuestoCatalogos_TipoSoporteId",
+                table: "RepuestoCatalogos",
+                column: "TipoSoporteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RepuestoCatalogos_UbicacionProductoId",
+                table: "RepuestoCatalogos",
+                column: "UbicacionProductoId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Repuestos_FamiliaId",
@@ -304,6 +351,9 @@ namespace GestorStock.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "RepuestoCatalogos");
+
             migrationBuilder.DropTable(
                 name: "Repuestos");
 

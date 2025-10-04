@@ -9,8 +9,6 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media;
 
 namespace GestorStock.API.Views
 {
@@ -24,8 +22,6 @@ namespace GestorStock.API.Views
         private readonly IProveedorService _proveedorService;
         private readonly IUbicacionProductoService _ubicacionProductoService;
         private readonly IServiceProvider _sp;
-        private readonly IRepuestoCatalogoService _catalogoService;
-
 
         private readonly ObservableCollection<Pedido> _pedidos = new();
         private bool _isExporting;
@@ -37,7 +33,6 @@ namespace GestorStock.API.Views
             ITipoSoporteService tipoSoporteService,
             IProveedorService proveedorService,
             IUbicacionProductoService ubicacionProductoService,
-            IRepuestoCatalogoService catalogoService,   // <-- NUEVO
             IServiceProvider sp)
         {
             InitializeComponent();
@@ -48,7 +43,6 @@ namespace GestorStock.API.Views
             _tipoSoporteService = tipoSoporteService;
             _proveedorService = proveedorService;
             _ubicacionProductoService = ubicacionProductoService;
-            _catalogoService = catalogoService;
             _sp = sp;
 
             PedidosDataGrid.ItemsSource = _pedidos;
@@ -60,10 +54,6 @@ namespace GestorStock.API.Views
             BuscarButton.Click += BuscarButton_Click;
             LimpiarButton.Click += LimpiarButton_Click;
             ExportarExcelButton.Click += ExportarExcelButton_Click;
-
-            // Formato de fechas y estilo vencido
-            PedidosDataGrid.AutoGeneratingColumn += PedidosDataGrid_AutoGeneratingColumn;
-            PedidosDataGrid.LoadingRow += PedidosDataGrid_LoadingRow;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -147,17 +137,17 @@ namespace GestorStock.API.Views
         private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             var win = new CreatePedidoWindow(
-                _pedidoService,            // 1
-                _familiaService,           // 2
-                _tipoSoporteService,       // 3
-                _proveedorService,         // 4
-                _ubicacionProductoService, // 5
-                _catalogoService,          // 6
-                _sp,                       // 7
-                null                       // 8
-            );
+                _pedidoService,
+                _repuestoService,
+                _familiaService,
+                _tipoSoporteService,
+                _proveedorService,
+                _ubicacionProductoService,
+                _sp,
+                null);
 
             win.Owner = this;
+
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
@@ -181,21 +171,20 @@ namespace GestorStock.API.Views
             }
 
             var win = new CreatePedidoWindow(
-                _pedidoService,            // 1
-                _familiaService,           // 2
-                _tipoSoporteService,       // 3
-                _proveedorService,         // 4
-                _ubicacionProductoService, // 5
-                _catalogoService,          // 6
-                _sp,                       // 7
-                pedidoCompleto             // 8
-            );
+                _pedidoService,
+                _repuestoService,
+                _familiaService,
+                _tipoSoporteService,
+                _proveedorService,
+                _ubicacionProductoService,
+                _sp,
+                pedidoCompleto);
 
             win.Owner = this;
+
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
-
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
@@ -305,39 +294,6 @@ namespace GestorStock.API.Views
             {
                 _isExporting = false;
                 ExportarExcelButton.IsEnabled = true;
-            }
-        }
-
-        // ==== Formato y estilo en la grilla ====
-
-        private void PedidosDataGrid_AutoGeneratingColumn(object? sender, DataGridAutoGeneratingColumnEventArgs e)
-        {
-            // Formato dd/MM/yyyy en columnas de fechas del Pedido
-            if (e.PropertyName == nameof(Pedido.FechaCreacion) ||
-                e.PropertyName == nameof(Pedido.FechaLlegada) ||
-                e.PropertyName == nameof(Pedido.FechaIncidencia))
-            {
-                if (e.Column is DataGridTextColumn col)
-                {
-                    col.Binding = new Binding(e.PropertyName)
-                    {
-                        StringFormat = "dd/MM/yyyy"
-                    };
-                }
-            }
-        }
-
-        private void PedidosDataGrid_LoadingRow(object? sender, DataGridRowEventArgs e)
-        {
-            if (e.Row.Item is Pedido p && p.EstaVencido)
-            {
-                e.Row.ToolTip = "Pedido vencido (Fecha de llegada igual o anterior a hoy).";
-                e.Row.Background = new SolidColorBrush(Color.FromRgb(255, 228, 225)); // MistyRose
-            }
-            else
-            {
-                e.Row.ClearValue(BackgroundProperty);
-                e.Row.ToolTip = null;
             }
         }
     }

@@ -120,7 +120,7 @@ namespace GestorStock.Data
 
             // Proveedor demo
             modelBuilder.Entity<Proveedor>().HasData(
-                new Proveedor { Id = 1, Nombre = "Proveedor Demo" } // <- propiedad correcta es Id
+                new Proveedor { Id = 1, Nombre = "Proveedor Demo" }
             );
 
             // Ubicaciones (extracto, deja las que pasaste)
@@ -182,28 +182,21 @@ namespace GestorStock.Data
                 new UbicacionProducto { Id = 9, Nombre = "Skyled valladolid (cc vallsur)", FamiliaId = 4 }
             );
 
-            // Pedido demo (usa fecha fija para estabilidad de migraciones)
+            // Pedido demo
             modelBuilder.Entity<Pedido>().HasData(
-                new Pedido
-                {
-                    Id = 1,
-                    FechaCreacion = new DateTime(2025, 10, 4),
-                    FamiliaId = 1,
-                    Descripcion = "Pedido demo",
-                    Incidencia = false
-                }
+                new Pedido { Id = 1, FechaCreacion = new DateTime(2025, 10, 04), FamiliaId = 1, Descripcion = "Pedido demo" }
             );
 
-            // Repuesto demo con FKs válidas
+            // Repuesto demo (si da problema, comentá este bloque, generá la migración, y luego lo volvés a activar)
             modelBuilder.Entity<Repuesto>().HasData(
-                new
+                new Repuesto
                 {
                     Id = 1,
                     Nombre = "Repuesto Demo",
                     Descripcion = "",
                     Cantidad = 1,
                     Precio = 0m,
-                    TipoRepuesto = (int)TipoRepuestoEnum.Original, // los enums en seeding van como int
+                    TipoRepuesto = GestorStock.Model.Enum.TipoRepuestoEnum.Original, // fully-qualified por las dudas
                     FamiliaId = 1,
                     UbicacionProductoId = 5,
                     ProveedorId = 1,

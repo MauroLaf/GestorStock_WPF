@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestorStock.Data.Migrations
 {
     [DbContext(typeof(StockDbContext))]
-    [Migration("20251004013428_MigracionInicial")]
+    [Migration("20251004172311_MigracionInicial")]
     partial class MigracionInicial
     {
         /// <inheritdoc />
@@ -61,31 +61,54 @@ namespace GestorStock.Data.Migrations
 
             modelBuilder.Entity("GestorStock.Model.Entities.Proveedor", b =>
                 {
-                    b.Property<int>("ProveedorId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<string>("Email")
-                        .HasColumnType("longtext");
-
                     b.Property<string>("Nombre")
+                        .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Telefono")
-                        .HasColumnType("longtext");
-
-                    b.HasKey("ProveedorId");
+                    b.HasKey("Id");
 
                     b.ToTable("Proveedores");
 
                     b.HasData(
                         new
                         {
-                            ProveedorId = 1,
-                            Email = "",
-                            Nombre = "Proveedor Demo",
-                            Telefono = ""
+                            Id = 1,
+                            Nombre = "Proveedor Demo"
                         });
+                });
+
+            modelBuilder.Entity("GestorStock.Model.Entities.RepuestoCatalogo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FamiliaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("TipoSoporteId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UbicacionProductoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FamiliaId");
+
+                    b.HasIndex("TipoSoporteId");
+
+                    b.HasIndex("UbicacionProductoId");
+
+                    b.ToTable("RepuestoCatalogos");
                 });
 
             modelBuilder.Entity("GestorStock.Model.Entities.TipoSoporte", b =>
@@ -547,16 +570,40 @@ namespace GestorStock.Data.Migrations
                             PedidoId = 1,
                             Precio = 0m,
                             ProveedorId = 1,
-                            TipoRepuesto = 1,
+                            TipoRepuesto = 0,
                             TipoSoporteId = 1,
                             UbicacionProductoId = 5
                         });
                 });
 
+            modelBuilder.Entity("GestorStock.Model.Entities.RepuestoCatalogo", b =>
+                {
+                    b.HasOne("GestorStock.Model.Entities.Familia", "Familia")
+                        .WithMany("Catalogo")
+                        .HasForeignKey("FamiliaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GestorStock.Model.Entities.TipoSoporte", "TipoSoporte")
+                        .WithMany()
+                        .HasForeignKey("TipoSoporteId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GestorStock.Model.Entities.UbicacionProducto", "UbicacionProducto")
+                        .WithMany()
+                        .HasForeignKey("UbicacionProductoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Familia");
+
+                    b.Navigation("TipoSoporte");
+
+                    b.Navigation("UbicacionProducto");
+                });
+
             modelBuilder.Entity("GestorStock.Model.Entities.UbicacionProducto", b =>
                 {
                     b.HasOne("GestorStock.Model.Entities.Familia", "Familia")
-                        .WithMany("UbicacionProductos")
+                        .WithMany("Ubicaciones")
                         .HasForeignKey("FamiliaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -590,7 +637,7 @@ namespace GestorStock.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("GestorStock.Model.Entities.Proveedor", "Proveedor")
-                        .WithMany("Repuestos")
+                        .WithMany()
                         .HasForeignKey("ProveedorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -620,16 +667,13 @@ namespace GestorStock.Data.Migrations
 
             modelBuilder.Entity("GestorStock.Model.Entities.Familia", b =>
                 {
+                    b.Navigation("Catalogo");
+
                     b.Navigation("Pedidos");
 
                     b.Navigation("Repuestos");
 
-                    b.Navigation("UbicacionProductos");
-                });
-
-            modelBuilder.Entity("GestorStock.Model.Entities.Proveedor", b =>
-                {
-                    b.Navigation("Repuestos");
+                    b.Navigation("Ubicaciones");
                 });
 
             modelBuilder.Entity("GestorStock.Model.Entities.TipoSoporte", b =>
