@@ -21,6 +21,7 @@ namespace GestorStock.API.Views
         private readonly IRepuestoService _repuestoService;
         private readonly IProveedorService _proveedorService;
         private readonly IUbicacionProductoService _ubicacionProductoService;
+        private readonly IRepuestoCatalogoService _catalogoService;          // <-- NUEVO
         private readonly IServiceProvider _sp;
 
         private readonly ObservableCollection<Pedido> _pedidos = new();
@@ -33,6 +34,7 @@ namespace GestorStock.API.Views
             ITipoSoporteService tipoSoporteService,
             IProveedorService proveedorService,
             IUbicacionProductoService ubicacionProductoService,
+            IRepuestoCatalogoService catalogoService,                    // <-- NUEVO
             IServiceProvider sp)
         {
             InitializeComponent();
@@ -43,6 +45,7 @@ namespace GestorStock.API.Views
             _tipoSoporteService = tipoSoporteService;
             _proveedorService = proveedorService;
             _ubicacionProductoService = ubicacionProductoService;
+            _catalogoService = catalogoService;                          // <-- NUEVO
             _sp = sp;
 
             PedidosDataGrid.ItemsSource = _pedidos;
@@ -72,11 +75,7 @@ namespace GestorStock.API.Views
                 FamiliaComboBox.DisplayMemberPath = "Nombre";
                 FamiliaComboBox.SelectedIndex = -1;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al cargar Familias: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error al cargar Familias: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
 
         private async Task CargarTiposSoporteAsync()
@@ -88,11 +87,7 @@ namespace GestorStock.API.Views
                 TipoSoporteComboBox.DisplayMemberPath = "Nombre";
                 TipoSoporteComboBox.SelectedIndex = -1;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al cargar Tipos de Soporte: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error al cargar Tipos: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
 
         private async Task CargarTodosLosPedidosAsync()
@@ -103,14 +98,10 @@ namespace GestorStock.API.Views
                 _pedidos.Clear();
                 foreach (var p in pedidos) _pedidos.Add(p);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al cargar pedidos: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception ex) { MessageBox.Show($"Error al cargar pedidos: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
         }
 
-        private async void BuscarButton_Click(object sender, RoutedEventArgs e)
+        private async void BuscarButton_Click(object? sender, RoutedEventArgs e)
         {
             await CargarTodosLosPedidosAsync();
 
@@ -118,7 +109,7 @@ namespace GestorStock.API.Views
             var sop = TipoSoporteComboBox.SelectedItem as TipoSoporte;
 
             var filtrados = _pedidos.Where(p =>
-                (fam == null || p.Repuestos.Any(r => r.UbicacionProducto?.FamiliaId == fam.Id)) &&
+                (fam == null || p.FamiliaId == fam.Id || p.Repuestos.Any(r => r.FamiliaId == fam.Id)) &&
                 (sop == null || p.Repuestos.Any(r => r.TipoSoporteId == sop.Id))
             ).ToList();
 
@@ -126,7 +117,7 @@ namespace GestorStock.API.Views
             foreach (var p in filtrados) _pedidos.Add(p);
         }
 
-        private async void LimpiarButton_Click(object sender, RoutedEventArgs e)
+        private async void LimpiarButton_Click(object? sender, RoutedEventArgs e)
         {
             FamiliaComboBox.SelectedIndex = -1;
             TipoSoporteComboBox.SelectedIndex = -1;
@@ -138,16 +129,15 @@ namespace GestorStock.API.Views
         {
             var win = new CreatePedidoWindow(
                 _pedidoService,
-                _repuestoService,
                 _familiaService,
                 _tipoSoporteService,
                 _proveedorService,
                 _ubicacionProductoService,
+                _catalogoService,        // <-- orden correcto
                 _sp,
                 null);
 
             win.Owner = this;
-
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
@@ -157,31 +147,28 @@ namespace GestorStock.API.Views
         {
             if (PedidosDataGrid.SelectedItem is not Pedido seleccionado)
             {
-                MessageBox.Show("Selecciona un pedido.", "Info",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Selecciona un pedido.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             var pedidoCompleto = await _pedidoService.GetWithDetalleAsync(seleccionado.Id);
             if (pedidoCompleto is null)
             {
-                MessageBox.Show("No se pudo cargar el pedido.", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("No se pudo cargar el pedido.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             var win = new CreatePedidoWindow(
                 _pedidoService,
-                _repuestoService,
                 _familiaService,
                 _tipoSoporteService,
                 _proveedorService,
                 _ubicacionProductoService,
+                _catalogoService,
                 _sp,
                 pedidoCompleto);
 
             win.Owner = this;
-
             if (win.ShowDialog() == true)
                 await CargarTodosLosPedidosAsync();
         }
@@ -190,8 +177,7 @@ namespace GestorStock.API.Views
         {
             if (PedidosDataGrid.SelectedItem is not Pedido seleccionado) return;
 
-            if (MessageBox.Show("¿Eliminar el pedido seleccionado?",
-                "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            if (MessageBox.Show("¿Eliminar el pedido seleccionado?", "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 await _pedidoService.DeleteAsync(seleccionado.Id);
                 await CargarTodosLosPedidosAsync();
@@ -202,8 +188,7 @@ namespace GestorStock.API.Views
         {
             if (sender is Button btn && btn.Tag is int repuestoId)
             {
-                if (MessageBox.Show("¿Eliminar este repuesto?", "Confirmar",
-                    MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                if (MessageBox.Show("¿Eliminar este repuesto?", "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     await _repuestoService.DeleteAsync(repuestoId);
                     await CargarTodosLosPedidosAsync();
@@ -211,7 +196,7 @@ namespace GestorStock.API.Views
             }
         }
 
-        // === Exportar Excel con EPPlus 8 ===
+        // === Exportar Excel (EPPlus) ===
         private void ExportarExcelButton_Click(object sender, RoutedEventArgs e)
         {
             if (_isExporting) return;
@@ -238,9 +223,9 @@ namespace GestorStock.API.Views
                 ws.Cells.Clear();
 
                 string[] headers = {
-                    "ID Pedido","Fecha Creación","Descripción","Incidencia","Fecha Incidencia","Fecha Llegada",
-                    "Ubicación","Familia","Tipo Soporte",
-                    "ID Repuesto","Nombre","Cantidad","Precio","Total Línea"
+                    "ID Pedido","Fecha Creación","Descripción","Incidencia","Desc. Incidencia","Fecha Incidencia","Fecha Llegada",
+                    "Familia",
+                    "ID Repuesto","Nombre","Cantidad","Precio","Tipo","Ubicación","Soporte","Total Línea"
                 };
 
                 for (int c = 0; c < headers.Length; c++) ws.Cells[1, c + 1].Value = headers[c];
@@ -254,7 +239,10 @@ namespace GestorStock.API.Views
                         ws.Cells[row, 2].Value = p.FechaCreacion;
                         ws.Cells[row, 3].Value = p.Descripcion;
                         ws.Cells[row, 4].Value = p.Incidencia;
-                        ws.Cells[row, 6].Value = p.FechaLlegada;
+                        ws.Cells[row, 5].Value = p.DescripcionIncidencia;
+                        ws.Cells[row, 6].Value = p.FechaIncidencia;
+                        ws.Cells[row, 7].Value = p.FechaLlegada;
+                        ws.Cells[row, 8].Value = p.Familia?.Nombre;
                         row++;
                         continue;
                     }
@@ -265,30 +253,30 @@ namespace GestorStock.API.Views
                         ws.Cells[row, 2].Value = p.FechaCreacion;
                         ws.Cells[row, 3].Value = p.Descripcion;
                         ws.Cells[row, 4].Value = p.Incidencia;
-                        ws.Cells[row, 5].Value = p.FechaIncidencia;
-                        ws.Cells[row, 6].Value = p.FechaLlegada;
-                        ws.Cells[row, 7].Value = r.UbicacionProducto?.Nombre;
-                        ws.Cells[row, 8].Value = r.UbicacionProducto?.Familia?.Nombre;
-                        ws.Cells[row, 9].Value = r.TipoSoporte?.Nombre;
+                        ws.Cells[row, 5].Value = p.DescripcionIncidencia;
+                        ws.Cells[row, 6].Value = p.FechaIncidencia;
+                        ws.Cells[row, 7].Value = p.FechaLlegada;
+                        ws.Cells[row, 8].Value = p.Familia?.Nombre;
 
-                        ws.Cells[row, 10].Value = r.Id;
-                        ws.Cells[row, 11].Value = r.Nombre;
-                        ws.Cells[row, 12].Value = r.Cantidad;
-                        ws.Cells[row, 13].Value = r.Precio;
-                        ws.Cells[row, 14].Value = r.Cantidad * r.Precio;
+                        ws.Cells[row, 9].Value = r.Id;
+                        ws.Cells[row, 10].Value = r.Nombre;
+                        ws.Cells[row, 11].Value = r.Cantidad;
+                        ws.Cells[row, 12].Value = r.Precio;
+                        ws.Cells[row, 13].Value = r.TipoRepuesto.ToString();
+                        ws.Cells[row, 14].Value = r.UbicacionProducto?.Nombre;
+                        ws.Cells[row, 15].Value = r.TipoSoporte?.Nombre;
+                        ws.Cells[row, 16].Value = r.Cantidad * r.Precio;
                         row++;
                     }
                 }
 
                 if (ws.Dimension != null) ws.Cells[ws.Dimension.Address].AutoFitColumns();
                 package.Save();
-                MessageBox.Show("Exportado correctamente.", "Éxito",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Exportado correctamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al exportar: {ex.Message}", "Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error al exportar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

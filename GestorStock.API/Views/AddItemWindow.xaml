@@ -1,87 +1,125 @@
 ﻿<Window x:Class="GestorStock.API.Views.AddItemWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Agregar Ítem"
-        Width="900" Height="600"
+        Title="Agregar ítem" Width="1120" Height="650"
         WindowStartupLocation="CenterOwner">
-
     <Grid Margin="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Cabecera -->
-        <Grid Margin="0,0,0,8">
+        <!-- CABECERA -->
+        <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="60"/>
-                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Proveedor -->
-            <TextBlock Grid.Column="0" Text="Proveedor:" VerticalAlignment="Center"/>
-            <ComboBox x:Name="cmbProveedor" Grid.Column="1" DisplayMemberPath="Nombre" />
-            <Button Grid.Column="2" x:Name="btnAddProveedor"  Content="+" Click="btnAddProveedor_Click"/>
-            <Button Grid.Column="3" x:Name="btnDelProveedor"  Content="-" Click="btnDelProveedor_Click"/>
+            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                <TextBlock Text="Proveedor:" FontWeight="Bold"/>
+                <ComboBox x:Name="cmbProveedor" DisplayMemberPath="Nombre"/>
+            </StackPanel>
 
-            <!-- Familia -->
-            <TextBlock Grid.Column="4" Text="Familia:" VerticalAlignment="Center" Margin="8,0,0,0"/>
-            <ComboBox x:Name="cmbFamilia" Grid.Column="5" DisplayMemberPath="Nombre" SelectionChanged="cmbFamilia_SelectionChanged"/>
-            <Button Grid.Column="6" x:Name="btnAddFamilia"  Content="+" Click="btnAddFamilia_Click"/>
-            <Button Grid.Column="7" x:Name="btnDelFamilia"  Content="-" Click="btnDelFamilia_Click"/>
+            <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                <TextBlock Text="Ubicación/Producto:" FontWeight="Bold"/>
+                <ComboBox x:Name="cmbUbicacion" DisplayMemberPath="Nombre"/>
+            </StackPanel>
 
-            <!-- Fila 2 -->
-            <TextBlock Grid.Column="0" Grid.Row="1" Text="Ubicación/Producto:" VerticalAlignment="Center"/>
-            <ComboBox x:Name="cmbUbicacion" Grid.Column="1" Grid.Row="1" DisplayMemberPath="Nombre"/>
-            <Button Grid.Column="2" Grid.Row="1" Content="+" Click="btnAddUbicacion_Click"/>
-            <Button Grid.Column="3" Grid.Row="1" Content="-" Click="btnDelUbicacion_Click"/>
+            <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                <TextBlock Text="Familia:" FontWeight="Bold"/>
+                <ComboBox x:Name="cmbFamilia" DisplayMemberPath="Nombre"/>
+            </StackPanel>
 
-            <TextBlock Grid.Column="4" Grid.Row="1" Text="Tipo de Soporte:" VerticalAlignment="Center" Margin="8,0,0,0"/>
-            <ComboBox x:Name="cmbTipoSoporte" Grid.Column="5" Grid.Row="1" DisplayMemberPath="Nombre"/>
-            <Button Grid.Column="6" Grid.Row="1" Content="+" Click="btnAddSoporte_Click"/>
-            <Button Grid.Column="7" Grid.Row="1" Content="-" Click="btnDelSoporte_Click"/>
-
-            <!-- Fila 3 -->
-            <TextBlock Grid.Column="0" Grid.Row="2" Text="Repuesto:" VerticalAlignment="Center"/>
-            <ComboBox x:Name="cmbRepuestoCat" Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="4"
-                      DisplayMemberPath="Nombre"/>
-            <Button Grid.Column="6" Grid.Row="2" Content="+" Click="btnAddRepuestoCat_Click"/>
-            <Button Grid.Column="7" Grid.Row="2" Content="-" Click="btnDelRepuestoCat_Click"/>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+            <StackPanel Grid.Column="3">
+                <TextBlock Text="Tipo de Soporte:" FontWeight="Bold"/>
+                <ComboBox x:Name="cmbTipoSoporte" DisplayMemberPath="Nombre"/>
+            </StackPanel>
         </Grid>
 
-        <!-- Detalle local (líneas preparadas para devolver a CreatePedidoWindow) -->
-        <DataGrid x:Name="dgTemp" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False"
-                  IsReadOnly="True" SelectionMode="Single">
+        <!-- FORM LINEA -->
+        <Grid Grid.Row="1" Margin="0,10,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                <TextBlock Text="Repuesto (Nombre):" FontWeight="Bold"/>
+                <ComboBox x:Name="cmbRepuestoCatalogo" IsEditable="True" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                <TextBlock Text="Descripción:" FontWeight="Bold"/>
+                <TextBox x:Name="txtDescripcion"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                <TextBlock Text="Cantidad:" FontWeight="Bold"/>
+                <TextBox x:Name="txtCantidad" Width="80" Text="1"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="3" Margin="0,0,8,0">
+                <TextBlock Text="Precio:" FontWeight="Bold"/>
+                <TextBox x:Name="txtPrecio" Width="100" Text="0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="4" Margin="0,0,8,0">
+                <TextBlock Text="Tipo (Original/Usado):" FontWeight="Bold"/>
+                <ComboBox x:Name="cmbTipoRepuesto">
+                    <ComboBoxItem Content="Original" Tag="0"/>
+                    <ComboBoxItem Content="Usado"    Tag="1"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Antes había Spacing aquí: lo reemplazo con Margin por estilo -->
+            <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Bottom">
+                <StackPanel.Resources>
+                    <Style TargetType="Button">
+                        <Setter Property="Margin" Value="8,0,0,0"/>
+                    </Style>
+                </StackPanel.Resources>
+                <!-- Acciones de línea -->
+                <UniformGrid Grid.Column="5" Rows="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,22,0,0">
+                    <Button Content="+" Width="28" Height="28" Padding="0" Click="BtnAddLinea_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
+                    <Button Content="Editar" Height="28" Padding="6,0" Click="BtnEditLinea_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
+                    <Button Content="-" Width="28" Height="28" Padding="0" Click="BtnRemoveLinea_Click" Style="{StaticResource ModernButtonStyle}"/>
+                </UniformGrid>
+            </StackPanel>
+        </Grid>
+
+        <!-- GRID DETALLE -->
+        <DataGrid x:Name="dgDetalle" Grid.Row="2"
+                  AutoGenerateColumns="False" CanUserAddRows="False"
+                  IsReadOnly="True" HeadersVisibility="Column">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Nombre"      Binding="{Binding Nombre}" Width="200"/>
-                <DataGridTextColumn Header="Descr"       Binding="{Binding Descripcion}" Width="*"/>
-                <DataGridTextColumn Header="Cantidad"    Binding="{Binding Cantidad}" Width="80"/>
-                <DataGridTextColumn Header="Precio"      Binding="{Binding Precio}" Width="100"/>
-                <DataGridTextColumn Header="Tipo"        Binding="{Binding TipoSoporte.Nombre}" Width="140"/>
-                <DataGridTextColumn Header="Ubicación"   Binding="{Binding UbicacionProducto.Nombre}" Width="200"/>
+                <DataGridTextColumn Header="Nombre"    Binding="{Binding Nombre}" Width="200"/>
+                <DataGridTextColumn Header="Descr"     Binding="{Binding Descripcion}" Width="220"/>
+                <DataGridTextColumn Header="Cantidad"  Binding="{Binding Cantidad}" Width="80"/>
+                <DataGridTextColumn Header="Precio"    Binding="{Binding Precio, StringFormat={}{0:0.00}}" Width="100"/>
+                <DataGridTextColumn Header="Tipo"      Binding="{Binding TipoRepuesto}" Width="120"/>
+                <DataGridTextColumn Header="Ubicación" Binding="{Binding UbicacionProducto.Nombre}" Width="220"/>
+                <DataGridTextColumn Header="Soporte"   Binding="{Binding TipoSoporte.Nombre}" Width="160"/>
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- Botonera -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button Content="Agregar Repuesto" Click="BtnAgregarRepuesto_Click" Margin="0,0,8,0"/>
-            <Button Content="Editar Repuesto"  Click="BtnEditarRepuesto_Click"  Margin="0,0,8,0"/>
-            <Button Content="Eliminar Repuesto" Click="BtnEliminarRepuesto_Click" Margin="0,0,8,0"/>
-            <Button Content="Aceptar" IsDefault="True" Click="BtnAceptar_Click" Margin="0,0,8,0"/>
-            <Button Content="Cancelar" IsCancel="True"/>
+        <!-- Botonera inferior -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel.Resources>
+                <Style TargetType="Button">
+                    <Setter Property="Margin" Value="8,0,0,0"/>
+                </Style>
+            </StackPanel.Resources>
+            <Button Content="Aceptar" Click="BtnAceptar_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,0,0"/>
+            <Button Content="Cancelar" Click="BtnCancelar_Click" Style="{StaticResource ModernButtonStyle}"/>
         </StackPanel>
     </Grid>
 </Window>

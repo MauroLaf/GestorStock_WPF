@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using GestorStock.Model.Entities;
+using GestorStock.Model.Enum;
 using GestorStock.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,11 +13,11 @@ namespace GestorStock.API.Views
     public partial class CreatePedidoWindow : Window
     {
         private readonly IPedidoService _pedidoService;
-        private readonly IRepuestoService _repuestoService;
         private readonly IFamiliaService _familiaService;
         private readonly ITipoSoporteService _tipoSoporteService;
         private readonly IProveedorService _proveedorService;
         private readonly IUbicacionProductoService _ubicacionProductoService;
+        private readonly IRepuestoCatalogoService _catalogoService;
         private readonly IServiceProvider _sp;
 
         private readonly ObservableCollection<Repuesto> _detalle = new();
@@ -24,31 +25,30 @@ namespace GestorStock.API.Views
 
         public CreatePedidoWindow(
             IPedidoService pedidoService,
-            IRepuestoService repuestoService,
             IFamiliaService familiaService,
             ITipoSoporteService tipoSoporteService,
             IProveedorService proveedorService,
             IUbicacionProductoService ubicacionProductoService,
+            IRepuestoCatalogoService catalogoService,
             IServiceProvider sp,
-            Pedido? pedidoAEditar = null)
+            Pedido? pedidoEditar)
         {
             InitializeComponent();
-
             _pedidoService = pedidoService;
-            _repuestoService = repuestoService;
             _familiaService = familiaService;
             _tipoSoporteService = tipoSoporteService;
             _proveedorService = proveedorService;
             _ubicacionProductoService = ubicacionProductoService;
+            _catalogoService = catalogoService;
             _sp = sp;
-            _pedidoEditar = pedidoAEditar;
+            _pedidoEditar = pedidoEditar;
 
             dgRepuestos.ItemsSource = _detalle;
 
-            Loaded += async (_, __) => await OnLoadedAsync();
+            Loaded += async (_, __) => await CreatePedidoWindow_Loaded();
         }
 
-        private async Task OnLoadedAsync()
+        private async Task CreatePedidoWindow_Loaded()
         {
             cmbFamilia.ItemsSource = await _familiaService.GetAllAsync();
             cmbTipoSoporte.ItemsSource = await _tipoSoporteService.GetAllAsync();
@@ -56,13 +56,13 @@ namespace GestorStock.API.Views
 
             if (_pedidoEditar != null)
             {
-                txtDescripcionPedido.Text = _pedidoEditar.Descripcion ?? "";
+                txtDescripcionPedido.Text = _pedidoEditar.Descripcion;
                 dpFechaLlegada.SelectedDate = _pedidoEditar.FechaLlegada;
-
                 chkIncidencia.IsChecked = _pedidoEditar.Incidencia;
                 dpFechaIncidencia.SelectedDate = _pedidoEditar.FechaIncidencia;
-                txtDescripcionIncidencia.Text = _pedidoEditar.DescripcionIncidencia ?? "";
+                txtDescripcionIncidencia.Text = _pedidoEditar.DescripcionIncidencia;
 
+                // Cabecera según familia
                 var fam = (_pedidoEditar.FamiliaId > 0)
                     ? (await _familiaService.GetAllAsync()).FirstOrDefault(f => f.Id == _pedidoEditar.FamiliaId)
                     : null;
@@ -73,11 +73,9 @@ namespace GestorStock.API.Views
                     cmbUbicacion.ItemsSource = await _ubicacionProductoService.GetByFamiliaAsync(fam.Id);
                 }
 
-                _detalle.Clear();
-                foreach (var r in _pedidoEditar.Repuestos) _detalle.Add(r);
+                foreach (var r in _pedidoEditar.Repuestos)
+                    _detalle.Add(r);
             }
-
-            ToggleIncidenciaControls(chkIncidencia.IsChecked == true);
         }
 
         private async void cmbFamilia_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -88,16 +86,7 @@ namespace GestorStock.API.Views
                 cmbUbicacion.ItemsSource = null;
         }
 
-        private void chkIncidencia_Checked(object sender, RoutedEventArgs e)
-            => ToggleIncidenciaControls(chkIncidencia.IsChecked == true);
-
-        private void ToggleIncidenciaControls(bool enabled)
-        {
-            dpFechaIncidencia.IsEnabled = enabled;
-            txtDescripcionIncidencia.IsEnabled = enabled;
-        }
-
-        // ===== Detalle =====
+        // ====== Detalle ======
         private void BtnAgregarLinea_Click(object sender, RoutedEventArgs e)
         {
             var win = _sp.GetRequiredService<AddItemWindow>();
@@ -111,15 +100,7 @@ namespace GestorStock.API.Views
 
             if (win.ShowDialog() == true && win.RepuestosCreados.Count > 0)
             {
-                foreach (var r in win.RepuestosCreados)
-                {
-                    if (cmbFamilia.SelectedItem is Familia f) { r.FamiliaId = f.Id; r.Familia = f; }
-                    if (cmbUbicacion.SelectedItem is UbicacionProducto u) { r.UbicacionProductoId = u.Id; r.UbicacionProducto = u; }
-                    if (cmbProveedor.SelectedItem is Proveedor p) { r.ProveedorId = p.Id; r.Proveedor = p; }
-                    if (cmbTipoSoporte.SelectedItem is TipoSoporte s) { r.TipoSoporteId = s.Id; r.TipoSoporte = s; }
-
-                    _detalle.Add(r);
-                }
+                foreach (var r in win.RepuestosCreados) _detalle.Add(r);
             }
         }
 
@@ -127,7 +108,8 @@ namespace GestorStock.API.Views
         {
             if (dgRepuestos.SelectedItem is not Repuesto sel)
             {
-                MessageBox.Show("Selecciona una línea."); return;
+                MessageBox.Show("Selecciona una línea.");
+                return;
             }
 
             var win = _sp.GetRequiredService<AddItemWindow>();
@@ -154,52 +136,59 @@ namespace GestorStock.API.Views
             if (dgRepuestos.SelectedItem is Repuesto sel) _detalle.Remove(sel);
         }
 
+        private void BtnCancelar_Click(object sender, RoutedEventArgs e) => Close();
+
+        // ====== GUARDAR ======
         private async void BtnGuardar_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbFamilia.SelectedItem is not Familia fam ||
-                cmbUbicacion.SelectedItem is not UbicacionProducto ubi ||
-                cmbProveedor.SelectedItem is not Proveedor prov ||
-                cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
+            if (cmbFamilia.SelectedItem is not Familia fam
+                || cmbUbicacion.SelectedItem is not UbicacionProducto ubi
+                || cmbProveedor.SelectedItem is not Proveedor prov
+                || cmbTipoSoporte.SelectedItem is not TipoSoporte sop)
             {
-                MessageBox.Show("Completa la cabecera del pedido."); return;
+                MessageBox.Show("Completa la cabecera del pedido.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
-            foreach (var r in _detalle)
+            // Construir un Pedido con SOLO FKs (para evitar duplicados / insert de entidades existentes)
+            var nuevo = new Pedido
             {
-                r.FamiliaId = fam.Id; r.Familia = fam;
-                r.UbicacionProductoId = ubi.Id; r.UbicacionProducto = ubi;
-                r.ProveedorId = prov.Id; r.Proveedor = prov;
-                r.TipoSoporteId = sop.Id; r.TipoSoporte = sop;
-            }
+                FechaCreacion = DateTime.Now,
+                Descripcion = txtDescripcionPedido.Text?.Trim(),
+                Incidencia = chkIncidencia.IsChecked == true,
+                FechaIncidencia = dpFechaIncidencia.SelectedDate,
+                DescripcionIncidencia = txtDescripcionIncidencia.Text?.Trim(),
+                FechaLlegada = dpFechaLlegada.SelectedDate,
+                FamiliaId = fam.Id,
+                Repuestos = _detalle.Select(r => new Repuesto
+                {
+                    Nombre = r.Nombre,
+                    Descripcion = r.Descripcion,
+                    Cantidad = r.Cantidad,
+                    Precio = r.Precio,
+                    TipoRepuesto = r.TipoRepuesto,
+                    FamiliaId = fam.Id,
+                    UbicacionProductoId = ubi.Id,
+                    ProveedorId = prov.Id,
+                    TipoSoporteId = sop.Id
+                }).ToList()
+            };
 
             if (_pedidoEditar == null)
             {
-                var nuevo = new Pedido
-                {
-                    FechaCreacion = DateTime.Now,
-                    Descripcion = txtDescripcionPedido.Text?.Trim(),
-                    Incidencia = chkIncidencia.IsChecked == true,
-                    FechaIncidencia = dpFechaIncidencia.SelectedDate,
-                    DescripcionIncidencia = txtDescripcionIncidencia.Text?.Trim(),
-                    FechaLlegada = dpFechaLlegada.SelectedDate,
-                    FamiliaId = fam.Id,
-                    Familia = fam,
-                    Repuestos = _detalle.ToList()
-                };
                 await _pedidoService.CreateAsync(nuevo);
             }
             else
             {
-                _pedidoEditar.Descripcion = txtDescripcionPedido.Text?.Trim();
-                _pedidoEditar.Incidencia = chkIncidencia.IsChecked == true;
-                _pedidoEditar.FechaIncidencia = dpFechaIncidencia.SelectedDate;
-                _pedidoEditar.DescripcionIncidencia = txtDescripcionIncidencia.Text?.Trim();
-                _pedidoEditar.FechaLlegada = dpFechaLlegada.SelectedDate;
-
-                _pedidoEditar.FamiliaId = fam.Id;
-                _pedidoEditar.Familia = fam;
-                _pedidoEditar.Repuestos = _detalle.ToList();
-
+                // Update: sustituimos las líneas por las nuevas del formulario
+                _pedidoEditar.FechaCreacion = nuevo.FechaCreacion;
+                _pedidoEditar.Descripcion = nuevo.Descripcion;
+                _pedidoEditar.Incidencia = nuevo.Incidencia;
+                _pedidoEditar.FechaIncidencia = nuevo.FechaIncidencia;
+                _pedidoEditar.DescripcionIncidencia = nuevo.DescripcionIncidencia;
+                _pedidoEditar.FechaLlegada = nuevo.FechaLlegada;
+                _pedidoEditar.FamiliaId = nuevo.FamiliaId;
+                _pedidoEditar.Repuestos = nuevo.Repuestos;
                 await _pedidoService.UpdateAsync(_pedidoEditar);
             }
 

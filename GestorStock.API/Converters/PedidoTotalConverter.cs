@@ -6,16 +6,19 @@ using GestorStock.Model.Entities;
 
 namespace GestorStock.API.Converters
 {
-    public class PedidoTotalConverter : IValueConverter
+    public sealed class PedidoTotalConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is Pedido p && p.Repuestos != null)
-                return p.Repuestos.Sum(r => r.Cantidad * r.Precio);
-            return 0m;
+            if (value is not Pedido p || p.Repuestos is null) return "0,00";
+
+            decimal total = p.Repuestos.Sum(r =>
+                (r?.Precio ?? 0m) * (decimal)(r?.Cantidad ?? 0));
+
+            return total.ToString("0.00", culture);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-            => Binding.DoNothing;
+            => throw new NotSupportedException();
     }
 }
