@@ -1,16 +1,19 @@
 ﻿<Window x:Class="GestorStock.API.Views.AddItemWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Agregar Repuesto"
-        Width="700" Height="420"
-        WindowStartupLocation="CenterOwner">
+        Title="Agregar Ítem"
+        Height="560" Width="780"
+        WindowStartupLocation="CenterOwner"
+        Icon="Assets/stock.ico">
+
     <Grid Margin="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Form -->
+        <!-- ====== CABECERA ====== -->
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -20,43 +23,88 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="170"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="Familia:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-            <ComboBox  x:Name="cmbFamilia" Grid.Row="0" Grid.Column="1" DisplayMemberPath="Nombre"
-                       SelectionChanged="cmbFamilia_SelectionChanged" Margin="0,0,0,8"/>
+            <!-- Proveedor -->
+            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Proveedor:" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbProveedor" Grid.Row="0" Grid.Column="1" Margin="0,0,8,8" DisplayMemberPath="Nombre"/>
+            <Button Grid.Row="0" Grid.Column="2" Content="+" Width="28" Height="28" Margin="0,0,6,8"
+                    ToolTip="Añadir proveedor" Click="BtnAddProveedor_Click"/>
+            <Button Grid.Row="0" Grid.Column="3" Content="-" Width="28" Height="28" Margin="0,0,0,8"
+                    ToolTip="Eliminar proveedor" Click="BtnDelProveedor_Click"/>
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Ubicación:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-            <ComboBox  x:Name="cmbUbicacion" Grid.Row="1" Grid.Column="1" DisplayMemberPath="Nombre" Margin="0,0,0,8"/>
+            <!-- Familia -->
+            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Familia:" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbFamilia" Grid.Row="1" Grid.Column="1" Margin="0,0,8,8"
+                       DisplayMemberPath="Nombre" SelectionChanged="cmbFamilia_SelectionChanged"/>
+            <Button Grid.Row="1" Grid.Column="2" Content="+" Width="28" Height="28" Margin="0,0,6,8"
+                    ToolTip="Añadir familia" Click="BtnAddFamilia_Click"/>
+            <Button Grid.Row="1" Grid.Column="3" Content="-" Width="28" Height="28" Margin="0,0,0,8"
+                    ToolTip="Eliminar familia" Click="BtnDelFamilia_Click"/>
 
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Proveedor:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-            <ComboBox  x:Name="cmbProveedor" Grid.Row="2" Grid.Column="1" DisplayMemberPath="Nombre" Margin="0,0,0,8"/>
+            <!-- Ubicación/Producto -->
+            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Ubicación/Producto:" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbUbicacion" Grid.Row="2" Grid.Column="1" Margin="0,0,8,8" DisplayMemberPath="Nombre"/>
+            <Button Grid.Row="2" Grid.Column="2" Content="+" Width="28" Height="28" Margin="0,0,6,8"
+                    ToolTip="Añadir ubicación a la familia seleccionada" Click="BtnAddUbicacion_Click"/>
+            <Button Grid.Row="2" Grid.Column="3" Content="-" Width="28" Height="28" Margin="0,0,0,8"
+                    ToolTip="Eliminar ubicación seleccionada" Click="BtnDelUbicacion_Click"/>
 
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="Tipo Soporte:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-            <ComboBox  x:Name="cmbTipoSoporte" Grid.Row="3" Grid.Column="1" DisplayMemberPath="Nombre" Margin="0,0,0,8"/>
+            <!-- Tipo de Soporte -->
+            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Tipo de Soporte:" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbTipoSoporte" Grid.Row="3" Grid.Column="1" Margin="0,0,8,8" DisplayMemberPath="Nombre"/>
+            <Button Grid.Row="3" Grid.Column="2" Content="+" Width="28" Height="28" Margin="0,0,6,8"
+                    ToolTip="Añadir tipo de soporte" Click="BtnAddTipoSoporte_Click"/>
+            <Button Grid.Row="3" Grid.Column="3" Content="-" Width="28" Height="28" Margin="0,0,0,8"
+                    ToolTip="Eliminar tipo de soporte" Click="BtnDelTipoSoporte_Click"/>
 
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="Tipo Repuesto:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-            <ComboBox  x:Name="cmbTipoRepuesto" Grid.Row="4" Grid.Column="1" Margin="0,0,0,8"/>
+            <!-- Tipo de Repuesto (Enum) -->
+            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Tipo de Repuesto:" Margin="0,0,8,8"/>
+            <ComboBox  x:Name="cmbTipoRepuesto" Grid.Row="4" Grid.Column="1" Margin="0,0,8,8"/>
+            <Button Grid.Row="4" Grid.Column="2" Content="+" Width="28" Height="28" Margin="0,0,6,8"
+                    ToolTip="Los valores del enum no se pueden modificar en tiempo de ejecución" Click="BtnAddTipoRepuesto_Click"/>
+            <Button Grid.Row="4" Grid.Column="3" Content="-" Width="28" Height="28" Margin="0,0,0,8"
+                    ToolTip="Los valores del enum no se pueden modificar en tiempo de ejecución" Click="BtnDelTipoRepuesto_Click"/>
 
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="Nombre:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-            <TextBox   x:Name="txtNombre" Grid.Row="5" Grid.Column="1" Margin="0,0,0,8"/>
+            <!-- Nombre Repuesto -->
+            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Repuesto (nombre):" Margin="0,0,8,8"/>
+            <TextBox   x:Name="txtNombre" Grid.Row="5" Grid.Column="1" Margin="0,0,8,8"/>
 
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="Descripción:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBox   x:Name="txtDescripcion" Grid.Row="6" Grid.Column="1"/>
+            <!-- Precio -->
+            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Precio (€):" Margin="0,0,8,8"/>
+            <TextBox   x:Name="txtPrecio" Grid.Row="6" Grid.Column="1" Margin="0,0,8,8"/>
+
+            <!-- Cantidad -->
+            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Cantidad:" Margin="0,0,8,0"/>
+            <TextBox   x:Name="txtCantidad" Grid.Row="7" Grid.Column="1" Margin="0,0,8,0"/>
         </Grid>
 
-        <!-- Botonera -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <TextBlock Text="Cantidad:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBox x:Name="txtCantidad" Width="60" Text="1" Margin="0,0,12,0"/>
-            <TextBlock Text="Precio:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBox x:Name="txtPrecio" Width="80" Text="0" Margin="0,0,12,0"/>
-            <Button Content="Agregar" Click="BtnAgregar_Click" Style="{StaticResource ModernButtonStyle}" Margin="0,0,8,0"/>
-            <Button Content="Cancelar" IsCancel="True" Style="{StaticResource ModernButtonStyle}"/>
+        <!-- ====== DETALLE (repuestos creados aquí) ====== -->
+        <DataGrid x:Name="dgRepuestos" Grid.Row="1" AutoGenerateColumns="False"
+                  CanUserAddRows="False" IsReadOnly="True" Margin="0,12,0,12">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Nombre"   Binding="{Binding Nombre}"   Width="*"/>
+                <DataGridTextColumn Header="Cantidad" Binding="{Binding Cantidad}" Width="100"/>
+                <DataGridTextColumn Header="Tipo Repuesto" Binding="{Binding TipoRepuesto}" Width="140"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- ====== BOTONERA ====== -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnAgregarRepuesto"    Content="Agregar Repuesto"   Click="BtnAgregarRepuesto_Click"   Margin="0,0,8,0" Style="{StaticResource ModernButtonStyle}"/>
+            <Button x:Name="BtnEditarRepuesto"     Content="Editar Repuesto"    Click="BtnEditarRepuesto_Click"    Margin="0,0,8,0" Style="{StaticResource ModernButtonStyle}"/>
+            <Button x:Name="BtnActualizarRepuesto" Content="Actualizar"         Click="BtnActualizarRepuesto_Click" Margin="0,0,8,0" Style="{StaticResource ModernButtonStyle}" Visibility="Collapsed"/>
+            <Button x:Name="BtnEliminarRepuesto"   Content="Eliminar Repuesto"  Click="BtnEliminarRepuesto_Click"  Margin="0,0,20,0" Style="{StaticResource ModernButtonStyle}"/>
+
+            <Button x:Name="BtnAceptar"  Content="Aceptar"  Width="110" IsDefault="True"  Click="BtnAceptar_Click"  Margin="0,0,8,0" Style="{StaticResource ModernButtonStyle}"/>
+            <Button x:Name="BtnCancelar" Content="Cancelar" Width="110" IsCancel="True"   Click="BtnCancelar_Click" Style="{StaticResource ModernButtonStyle}"/>
         </StackPanel>
     </Grid>
 </Window>
